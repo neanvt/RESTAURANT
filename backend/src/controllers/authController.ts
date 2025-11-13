@@ -376,9 +376,13 @@ export const getCurrentUser = async (
  */
 export const login = async (req: Request, res: Response): Promise<void> => {
   try {
+    console.log("🔐 Login attempt started");
+    console.log("- Request body keys:", Object.keys(req.body));
+    
     const { identifier, password } = req.body; // identifier: phone or email
 
     if (!identifier || !password) {
+      console.log("❌ Missing credentials");
       res.status(400).json({
         success: false,
         error: {
@@ -389,6 +393,8 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
+    console.log("📱 Looking up user with identifier:", identifier);
+
     // Find user by phone or email
     let foundUser = await User.findOne({ phone: identifier, isActive: true });
     if (!foundUser) {
@@ -396,6 +402,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     }
 
     if (!foundUser) {
+      console.log("❌ User not found");
       res.status(401).json({
         success: false,
         error: {
@@ -405,6 +412,8 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       });
       return;
     }
+
+    console.log("✅ User found:", foundUser._id);
 
     if (!foundUser.password) {
       res.status(400).json({
@@ -450,12 +459,17 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       },
     });
   } catch (error: any) {
-    console.error("Error in login:", error);
+    console.error("❌ Error in login:", error);
+    console.error("- Error name:", error.name);
+    console.error("- Error message:", error.message);
+    console.error("- Error stack:", error.stack);
+    
     res.status(500).json({
       success: false,
       error: {
         code: "INTERNAL_ERROR",
         message: "An error occurred during login",
+        details: process.env.NODE_ENV === "development" ? error.message : undefined
       },
     });
   }
