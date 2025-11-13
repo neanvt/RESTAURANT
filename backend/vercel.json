@@ -2,8 +2,7 @@
   "version": 2,
   "functions": {
     "src/server.ts": {
-      "runtime": "nodejs18.x",
-      "maxDuration": 30
+      "runtime": "@vercel/node@18.19.0"
     }
   },
   "rewrites": [
@@ -11,8 +10,5 @@
       "source": "/(.*)",
       "destination": "/src/server.ts"
     }
-  ],
-  "env": {
-    "NODE_ENV": "production"
-  }
+  ]
 }
