@@ -77,4 +77,4 @@ dump.rdb
 logs/
 
 # Testing
-.jest-cache/
+.jest-cache/frontend-deploy*.zip
