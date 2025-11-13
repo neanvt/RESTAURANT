@@ -39,9 +39,9 @@ REDIS_PORT=6379
 JWT_SECRET=your-super-secret-jwt-key-change-this
 
 # Firebase Admin (get from Firebase Console > Project Settings > Service Accounts)
-FIREBASE_PROJECT_ID=restopos-15a94
-FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCuqysLZOaiTZTq\nSxCzMZGgjaRXYQSzshYluKzVPEKWkjXymwdqyF2JVq96YeFZhv9LG6aQJ4a8BH25\nImX8MbSu1Bz4yi+6Ft/57J44zeTrQcnzxUsXnmnMrN0qldTDQPJ2RNtUqJ3EaEpn\nFdnO33ZAS+DmbYDL0BaR/ZxCPsQSOqqv0g/1BexB4iFgwmQkNQOP5Hq7fp+niLvW\nhA18phlP0avY0xx9R/nGmJhhdgwFlTgas7Tw78vkA1YQQN7XcASIVLxBqZTuytJX\nrDupeqPVFwnk1QNF561nK0ehGiZ4jINiRpLtRHqxki+egP5SahA3Kjp78RMssHGQ\nVuLhmBrVAgMBAAECggEACceovdcU+NJ6O5IfacElQ8WahY/3mO4oQk1wU/IvUkn2\nflKC3E5Cun1hjusrGH2wDq8KKPklmKJxvat45WGNGdrjkmSTvoooWVCP3WNd5XRG\nEAGkfjqO9vhY29kO1C3vRYL+euOEDeq++72j9+rYLqpw+cX417CbiuoV1Tm5dcG+\nfZQwYI1JedKlpORyG+xp9N+W/L8bMUIVi2pvciloEJyqAKhVdLsZhw0CGjyoVpgA\nzNsibVR8vAckei/3FIlEzGPJSTll868QZpw2s5BONLciIPV7wkXIf4Q7lGcmp2yU\ndMf1FvuBmbtrJBiZR8JkmpBh83a6l7KVkk3bFglw4QKBgQDVGgLNxNOVZ+ielqvh\nFPHt3kaSbsKce2X875Pc9VTbG2oCuKlNvzkL29llTdZ59bs/XwNVwOM1vHb34YNB\n66S6P5A+JU+SBuPW5bAsECWM9Q/fqnERxrtOLPOHHjsEPKQyI5hEQ4ArmTtGp7/9\nznulOJZArRu3392izVzxjGQgUQKBgQDR1IzPp0XWIPODcwz9MOv1IPUWbOOki/AK\ndPHfoVCZa5KOxGZa5PKxEnC0OmTkv/uAMLkbhNGYqjmyZmG2+lm5uLu5lYTwYLKw\nH2AvkQeqxh8su7DO8hJ4dg82VWdy+x1zgkDtCEF+wyfuwNgjMravk2LcV99vA30n\nOwLGijjVRQKBgDCL9muOFW2J+HJ4fLuQG/VGl+kwFmGzsu5GXfcOZMBtpF7uVpOB\npqtO8F2lt+Cc3IV5TbcxdBF/19Jsq4xO9H4BkQi3U0M/EpSYSuQe4Y8VHQKlP5D/\nJxiOIQR9HJDAh99sQHn8rqxAAkL8YD6f1Yc0NvaQ+SmQdFtsUWotw3mhAoGALOGr\n5NbAp1aQ/7LiOl32eo48HjnYT1/nTjVJby4QEWDjDkqQIi0KhDmPhd1fq1YtM3Q4\ng9xbAK6YfMJNcFgITSNoc/+5Wbk1P1rWthXtb+fEz0quPPWmYcHO6y5FXGC+IfDg\ndlLnv3d62STClnTIgrGh2cOp9RLn+DY1F8aE9YkCgYEAsFpnIAq9pKSf4sl4LFLp\nDq1jXAx5fKY+bYpJJKYaOS8o6j5h3+F9GT/PIQHaBa6OFYK7qHxfGXrq6/S+g1SS\n1ReSj3gkj/QZIY/KfPgeOrmTROwiGoVyrEPg+lcgxht1m84U1IfS07JE7yrW0pi6\nzWlYqz5be98yUOCROJTA/2Y=\n-----END PRIVATE KEY-----\n"
-FIREBASE_CLIENT_EMAIL=firebase-adminsdk-fbsvc@restopos-15a94.iam.gserviceaccount.com
+FIREBASE_PROJECT_ID=your-firebase-project-id
+FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nYOUR_ACTUAL_PRIVATE_KEY_FROM_FIREBASE_GOES_HERE\n-----END PRIVATE KEY-----\n"
+FIREBASE_CLIENT_EMAIL=firebase-adminsdk-xxxxx@your-firebase-project.iam.gserviceaccount.com
 
 # OpenAI (get from https://platform.openai.com/api-keys)
 OPENAI_API_KEY=sk-YOUR_OPENAI_API_KEY_HERE
@@ -66,9 +66,9 @@ Edit `frontend/.env.local`:
 NEXT_PUBLIC_API_URL=http://localhost:5000/api
 
 # Firebase Config (get from Firebase Console > Project Settings > General)
-NEXT_PUBLIC_FIREBASE_API_KEY=AIzaSyDAVPvjZX1m5FD3qufBRUfrvWVrG4_b4wY
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
-NEXT_PUBLIC_FIREBASE_PROJECT_ID=your-project-id
+NEXT_PUBLIC_FIREBASE_API_KEY=AIzaSyXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your-firebase-project.firebaseapp.com
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=your-firebase-project-id
 ```
 
 ### Step 3: Start Services (2 minutes)
