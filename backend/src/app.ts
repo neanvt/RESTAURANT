@@ -32,49 +32,50 @@ app.use(
 );
 
 // CORS configuration
-// CORS configuration - support comma-separated whitelist via ALLOWED_ORIGINS env var
-const rawAllowed =
-  process.env.ALLOWED_ORIGINS ||
-  process.env.CORS_ORIGIN ||
-  "http://localhost:3000";
-const allowedOrigins = rawAllowed
-  .split(",")
-  .map((s) => s.trim())
-  .filter(Boolean);
+// Direct CORS configuration to fix immediate issues
+const allowedOrigins = [
+  "https://restaurant-frontend-yvss.vercel.app",
+  "https://restaurant-frontend-bice.vercel.app", 
+  "http://localhost:3000",
+  "http://localhost:4200"
+];
 
-// Add logging to debug CORS issues
-console.log("🔍 CORS Debug Info:");
-console.log("- ALLOWED_ORIGINS env:", process.env.ALLOWED_ORIGINS);
-console.log("- Parsed allowed origins:", allowedOrigins);
+// Add environment variable support as fallback
+const envOrigins = process.env.ALLOWED_ORIGINS || process.env.CORS_ORIGIN;
+if (envOrigins) {
+  const additionalOrigins = envOrigins.split(",").map(s => s.trim()).filter(Boolean);
+  allowedOrigins.push(...additionalOrigins);
+}
+
+console.log("🔍 CORS Configuration:");
+console.log("- Allowed origins:", allowedOrigins);
+console.log("- Environment ALLOWED_ORIGINS:", process.env.ALLOWED_ORIGINS);
 
 app.use(
   cors({
     origin: (origin, callback) => {
       console.log(`🌐 CORS request from origin: ${origin}`);
       
-      // allow server-to-server or tools with no origin
+      // Allow requests with no origin (mobile apps, curl, postman, etc.)
       if (!origin) {
         console.log("✅ Allowing request with no origin");
         return callback(null, true);
       }
       
+      // Check if origin is in allowed list
       if (allowedOrigins.includes(origin)) {
-        console.log("✅ Origin allowed by whitelist");
+        console.log("✅ Origin allowed");
         return callback(null, true);
       }
       
-      // Temporarily allow all origins for debugging
-      if (process.env.NODE_ENV === "production") {
-        console.log("🚨 Temporarily allowing all origins for debugging");
-        return callback(null, true);
-      }
-      
-      // otherwise reject with a clear message
-      const msg = `CORS: Origin ${origin} not allowed. Allowed: ${allowedOrigins.join(
-        ","
-      )}`;
-      console.warn(msg);
-      return callback(new Error(msg));
+      // Log and reject
+      console.warn(`❌ CORS blocked: ${origin}. Allowed: ${allowedOrigins.join(", ")}`);
+      return callback(new Error(`CORS: Origin ${origin} not allowed`));
+    },
+    credentials: true,
+    optionsSuccessStatus: 200,
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"]
     },
     credentials: true,
   })
