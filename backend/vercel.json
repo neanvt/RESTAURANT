@@ -14,6 +14,5 @@
   ],
   "env": {
     "NODE_ENV": "production"
-  },
-  "$comment": "Force fresh deployment - runtime fix applied"
+  }
 }
