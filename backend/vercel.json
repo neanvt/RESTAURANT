@@ -10,5 +10,9 @@
       "source": "/(.*)",
       "destination": "/src/server.ts"
     }
-  ]
+  ],
+  "env": {
+    "NODE_ENV": "production",
+    "ALLOWED_ORIGINS": "https://restaurant-frontend-bice.vercel.app,http://localhost:3000,http://localhost:4200"
+  }
 }
