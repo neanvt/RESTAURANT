@@ -42,12 +42,33 @@ const allowedOrigins = rawAllowed
   .map((s) => s.trim())
   .filter(Boolean);
 
+// Add logging to debug CORS issues
+console.log("🔍 CORS Debug Info:");
+console.log("- ALLOWED_ORIGINS env:", process.env.ALLOWED_ORIGINS);
+console.log("- Parsed allowed origins:", allowedOrigins);
+
 app.use(
   cors({
     origin: (origin, callback) => {
+      console.log(`🌐 CORS request from origin: ${origin}`);
+      
       // allow server-to-server or tools with no origin
-      if (!origin) return callback(null, true);
-      if (allowedOrigins.includes(origin)) return callback(null, true);
+      if (!origin) {
+        console.log("✅ Allowing request with no origin");
+        return callback(null, true);
+      }
+      
+      if (allowedOrigins.includes(origin)) {
+        console.log("✅ Origin allowed by whitelist");
+        return callback(null, true);
+      }
+      
+      // Temporarily allow all origins for debugging
+      if (process.env.NODE_ENV === "production") {
+        console.log("🚨 Temporarily allowing all origins for debugging");
+        return callback(null, true);
+      }
+      
       // otherwise reject with a clear message
       const msg = `CORS: Origin ${origin} not allowed. Allowed: ${allowedOrigins.join(
         ","
