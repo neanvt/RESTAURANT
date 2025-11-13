@@ -8,7 +8,7 @@ import type {
 } from "@/types/outlet";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5005";
-const API_BASE = API_URL;
+const API_BASE = `${API_URL}/api`;
 
 // API Response type
 interface ApiResponse<T> {
