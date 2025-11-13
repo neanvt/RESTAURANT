@@ -78,3 +78,7 @@ logs/
 
 # Testing
 .jest-cache/frontend-deploy*.zip
+# Secrets and sensitive files
+*.env
+!.env.example
+*firebase-adminsdk*.json
