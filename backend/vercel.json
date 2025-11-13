@@ -14,6 +14,13 @@
   ],
   "env": {
     "NODE_ENV": "production",
-    "ALLOWED_ORIGINS": "https://restaurant-frontend-yvss.vercel.app,https://restaurant-frontend-bice.vercel.app,http://localhost:3000,http://localhost:4200"
+    "ALLOWED_ORIGINS": "https://restaurant-frontend-yvss.vercel.app,https://restaurant-frontend-bice.vercel.app,http://localhost:3000,http://localhost:4200",
+    "JWT_SECRET": "your-super-secret-jwt-key-change-this-in-production",
+    "JWT_EXPIRES_IN": "60d",
+    "REFRESH_TOKEN_SECRET": "your-refresh-token-secret-change-this",
+    "REFRESH_TOKEN_EXPIRES_IN": "180d",
+    "MONGODB_URI": "mongodb+srv://neelesh001_db_user:oFcge0sbzRWIiySZ@pos.ifwspur.mongodb.net/",
+    "FIREBASE_PROJECT_ID": "restopos-15a94",
+    "FIREBASE_CLIENT_EMAIL": "firebase-adminsdk-fbsvc@restopos-15a94.iam.gserviceaccount.com"
   }
 }
