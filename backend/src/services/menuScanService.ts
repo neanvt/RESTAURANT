@@ -2,9 +2,21 @@ import OpenAI from "openai";
 import Item from "../models/Item";
 import Category from "../models/Category";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// Make OpenAI client optional
+let openai: OpenAI | null = null;
+
+try {
+  if (process.env.OPENAI_API_KEY) {
+    openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
+    console.log("✅ OpenAI client initialized successfully");
+  } else {
+    console.warn("⚠️ OpenAI API key not found. Menu scan features will be disabled.");
+  }
+} catch (error) {
+  console.error("❌ Failed to initialize OpenAI client:", error);
+}
 
 interface ScannedMenuItem {
   name: string;
@@ -30,6 +42,11 @@ export class MenuScanService {
     _outletId: string
   ): Promise<ScanResult> {
     const startTime = Date.now();
+
+    // Check if OpenAI is available
+    if (!openai) {
+      throw new Error("OpenAI service is not available. Please configure OPENAI_API_KEY environment variable.");
+    }
 
     try {
       const prompt = `Analyze this restaurant menu image and extract ALL menu items with their prices. 
@@ -275,8 +292,13 @@ Rules:
     itemName: string,
     _outletId: string
   ): Promise<string | null> {
+    // Check if OpenAI is available
+    if (!openai) {
+      console.warn("OpenAI not available for category suggestion");
+      return null;
+    }
     try {
-      const response = await openai.chat.completions.create({
+      const response = await openai!.chat.completions.create({
         model: "gpt-3.5-turbo",
         messages: [
           {
@@ -304,8 +326,14 @@ Rules:
    * Extract price from text using AI
    */
   async extractPriceFromText(text: string): Promise<number | null> {
+    // Check if OpenAI is available
+    if (!openai) {
+      console.warn("OpenAI not available for price extraction");
+      return null;
+    }
+
     try {
-      const response = await openai.chat.completions.create({
+      const response = await openai!.chat.completions.create({
         model: "gpt-3.5-turbo",
         messages: [
           {
