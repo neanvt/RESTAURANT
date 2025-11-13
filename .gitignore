@@ -81,4 +81,4 @@ logs/
 # Secrets and sensitive files
 *.env
 !.env.example
-*firebase-adminsdk*.json
+*firebase-adminsdk*.jsonrestopos-*-firebase-adminsdk-*.json
