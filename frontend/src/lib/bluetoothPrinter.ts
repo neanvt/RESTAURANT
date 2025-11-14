@@ -351,7 +351,7 @@ class BluetoothPrinterService {
   }
 
   /**
-   * Print invoice/receipt
+   * Print invoice/receipt - Compact format matching screen
    */
   async printInvoice(invoice: {
     outletName: string;
@@ -374,113 +374,88 @@ class BluetoothPrinterService {
   }): Promise<void> {
     await this.initialize();
 
-    // Header - Normal size, not double
-    await this.printText(invoice.outletName, { bold: true, align: 'center' });
+    // Header - centered, normal text
+    await this.write(Commands.ALIGN_CENTER);
+    await this.write(invoice.outletName.substring(0, 32));
+    await this.write('\n');
+    
     if (invoice.outletAddress) {
-      await this.write(Commands.ALIGN_CENTER);
       await this.write(invoice.outletAddress.substring(0, 32));
-      await this.write(Commands.FEED_LINE);
+      await this.write('\n');
     }
     if (invoice.outletPhone) {
-      await this.write(Commands.ALIGN_CENTER);
-      await this.write(`Phone: ${invoice.outletPhone}`);
-      await this.write(Commands.FEED_LINE);
+      await this.write(invoice.outletPhone);
+      await this.write('\n');
     }
     await this.write(Commands.ALIGN_LEFT);
-    await this.printLine();
+    await this.write('--------------------------------\n');
 
-    // Invoice details - compact
-    await this.write(`Invoice: ${invoice.invoiceNumber}`);
-    await this.write(Commands.FEED_LINE);
-    await this.write(`Date: ${invoice.date}`);
-    await this.write(Commands.FEED_LINE);
+    // Tax Invoice label
+    await this.write(Commands.ALIGN_CENTER);
+    await this.write('Tax Invoice\n');
+    await this.write(Commands.ALIGN_LEFT);
+    await this.write('--------------------------------\n');
+
+    // Invoice details
+    await this.write('Invoice #: ' + invoice.invoiceNumber + '\n');
+    await this.write('Date: ' + invoice.date + '\n');
     if (invoice.customerName) {
-      await this.write(`Customer: ${invoice.customerName}`);
-      await this.write(Commands.FEED_LINE);
+      await this.write('Customer: ' + invoice.customerName + '\n');
     }
-    await this.printLine();
+    await this.write('--------------------------------\n');
 
-    // Items header
-    await this.write(Commands.BOLD_ON);
-    await this.write('Item Name         Qty  Price ');
-    await this.write(Commands.FEED_LINE);
-    await this.write(Commands.BOLD_OFF);
-    await this.printLine();
+    // Items header - matching screen
+    await this.write('Item Name         Qty    Price\n');
+    await this.write('--------------------------------\n');
     
-    // Items
+    // Items - exactly as shown on screen
     for (const item of invoice.items) {
-      // Item name (max 32 chars on 58mm)
-      const itemName = item.name.substring(0, 30);
-      await this.write(itemName);
-      await this.write(Commands.FEED_LINE);
-      
-      // Quantity, price and total on same line
-      const qtyStr = `${item.quantity}x`;
-      const priceStr = `₹${item.price.toFixed(2)}`;
-      const totalStr = `₹${item.total.toFixed(2)}`;
-      
-      // Right align total
-      const line = `  ${qtyStr} ${priceStr}`;
-      const spaces = 32 - line.length - totalStr.length;
-      await this.write(line + ' '.repeat(Math.max(spaces, 1)) + totalStr);
-      await this.write(Commands.FEED_LINE);
+      const itemName = item.name.substring(0, 18).padEnd(18);
+      const qty = String(item.quantity).padStart(3);
+      const price = item.price.toFixed(2).padStart(8);
+      await this.write(itemName + qty + ' ' + price + '\n');
     }
     
-    await this.printLine();
+    await this.write('--------------------------------\n');
 
     // Totals - right aligned
-    const subtotalLine = 'Subtotal:';
-    const subtotalValue = `₹${invoice.subtotal.toFixed(2)}`;
-    await this.write(subtotalLine + ' '.repeat(32 - subtotalLine.length - subtotalValue.length) + subtotalValue);
-    await this.write(Commands.FEED_LINE);
+    const subtotalStr = invoice.subtotal.toFixed(2);
+    await this.write('Subtotal:'.padEnd(24) + subtotalStr.padStart(8) + '\n');
     
     if (invoice.tax) {
-      const taxLine = 'Tax:';
-      const taxValue = `₹${invoice.tax.toFixed(2)}`;
-      await this.write(taxLine + ' '.repeat(32 - taxLine.length - taxValue.length) + taxValue);
-      await this.write(Commands.FEED_LINE);
+      const taxStr = invoice.tax.toFixed(2);
+      await this.write('Tax:'.padEnd(24) + taxStr.padStart(8) + '\n');
     }
     
     if (invoice.discount) {
-      const discLine = 'Discount:';
-      const discValue = `-₹${invoice.discount.toFixed(2)}`;
-      await this.write(discLine + ' '.repeat(32 - discLine.length - discValue.length) + discValue);
-      await this.write(Commands.FEED_LINE);
+      const discStr = invoice.discount.toFixed(2);
+      await this.write('Discount:'.padEnd(24) + '-' + discStr.padStart(7) + '\n');
     }
     
-    await this.printLine('double');
+    await this.write('================================\n');
     
-    // Grand total - bold
-    await this.write(Commands.BOLD_ON);
-    const totalLine = 'TOTAL:';
-    const totalValue = `₹${invoice.total.toFixed(2)}`;
-    await this.write(totalLine + ' '.repeat(32 - totalLine.length - totalValue.length) + totalValue);
-    await this.write(Commands.FEED_LINE);
-    await this.write(Commands.BOLD_OFF);
-    
-    await this.printLine('double');
+    // Grand total
+    const totalStr = invoice.total.toFixed(2);
+    await this.write('TOTAL:'.padEnd(24) + totalStr.padStart(8) + '\n');
+    await this.write('================================\n');
 
     if (invoice.paymentMethod) {
-      await this.write(`Payment: ${invoice.paymentMethod}`);
-      await this.write(Commands.FEED_LINE);
+      await this.write('Payment: ' + invoice.paymentMethod + '\n');
     }
 
     // Footer
-    await this.feed(1);
+    await this.write('\n');
     await this.write(Commands.ALIGN_CENTER);
-    await this.write(Commands.BOLD_ON);
-    await this.write('Thank you for your visit!');
-    await this.write(Commands.FEED_LINE);
-    await this.write(Commands.BOLD_OFF);
-    await this.write('Please visit again');
-    await this.write(Commands.FEED_LINE);
+    await this.write('Thank you for your visit!\n');
+    await this.write('Please visit again\n');
     await this.write(Commands.ALIGN_LEFT);
     
+    await this.feed(2);
     await this.cut();
   }
 
   /**
-   * Print KOT (Kitchen Order Ticket)
+   * Print KOT (Kitchen Order Ticket) - Compact format
    */
   async printKOT(kot: {
     outletName: string;
@@ -495,63 +470,46 @@ class BluetoothPrinterService {
   }): Promise<void> {
     await this.initialize();
 
-    // Header - Double size only for KOT title
+    // Header - KITCHEN ORDER in normal text
     await this.write(Commands.ALIGN_CENTER);
-    await this.write(Commands.SIZE_DOUBLE);
-    await this.write(Commands.BOLD_ON);
-    await this.write('KITCHEN ORDER');
-    await this.write(Commands.FEED_LINE);
-    await this.write(Commands.SIZE_NORMAL);
-    await this.write(Commands.BOLD_OFF);
+    await this.write('KITCHEN ORDER\n');
     await this.write(Commands.ALIGN_LEFT);
-    await this.printLine('double');
+    await this.write('================================\n');
 
-    // Order details - Compact
-    await this.write(`KOT: ${kot.orderNumber}`);
-    await this.write(Commands.FEED_LINE);
+    // Order details - exactly as screen shows
+    await this.write('KOT: ' + kot.orderNumber + '\n');
     
     if (kot.tableNumber) {
-      await this.write(Commands.BOLD_ON);
-      await this.write(`Table No: ${kot.tableNumber}`);
-      await this.write(Commands.FEED_LINE);
-      await this.write(Commands.BOLD_OFF);
+      await this.write('Table No: ' + kot.tableNumber + '\n');
     }
     
-    await this.write(`Time: ${kot.date}`);
-    await this.write(Commands.FEED_LINE);
-    await this.printLine('double');
+    await this.write('Time: ' + kot.date + '\n');
+    await this.write('================================\n');
 
-    // Items - Clear and readable
-    await this.write(Commands.BOLD_ON);
-    await this.write('Item                      QTY');
-    await this.write(Commands.FEED_LINE);
-    await this.write(Commands.BOLD_OFF);
-    await this.printLine();
+    // Items header
+    await this.write('Item                      QTY\n');
+    await this.write('--------------------------------\n');
     
+    // Items list
     for (const item of kot.items) {
-      // Item name
-      const itemName = item.name.substring(0, 26);
-      const qtyStr = String(item.quantity);
-      const spaces = 32 - itemName.length - qtyStr.length;
-      
-      await this.write(itemName + ' '.repeat(Math.max(spaces, 1)) + qtyStr);
-      await this.write(Commands.FEED_LINE);
+      const itemName = item.name.substring(0, 26).padEnd(26);
+      const qty = String(item.quantity).padStart(3);
+      await this.write(itemName + qty + '\n');
       
       // Notes if any
       if (item.notes) {
-        await this.write(`  Note: ${item.notes.substring(0, 28)}`);
-        await this.write(Commands.FEED_LINE);
+        await this.write('  Note: ' + item.notes.substring(0, 24) + '\n');
       }
     }
 
-    await this.printLine('double');
+    await this.write('================================\n');
     
     // Footer
     await this.write(Commands.ALIGN_CENTER);
-    await this.write(kot.outletName);
-    await this.write(Commands.FEED_LINE);
+    await this.write(kot.outletName + '\n');
     await this.write(Commands.ALIGN_LEFT);
     
+    await this.feed(2);
     await this.cut();
   }
 }
