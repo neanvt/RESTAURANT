@@ -263,37 +263,89 @@ class BluetoothPrinterService {
   async printTestPage(): Promise<void> {
     await this.initialize();
     
-    await this.printText('PRINTER TEST', { bold: true, align: 'center', size: 'double' });
-    await this.feed(1);
+    // Header - normal size
+    await this.write(Commands.ALIGN_CENTER);
+    await this.write(Commands.BOLD_ON);
+    await this.write('PRINTER TEST');
+    await this.write(Commands.FEED_LINE);
+    await this.write(Commands.BOLD_OFF);
+    await this.write(Commands.ALIGN_LEFT);
     await this.printLine();
     
-    await this.printText('Restaurant POS System', { align: 'center' });
-    await this.printText(new Date().toLocaleString(), { align: 'center' });
-    await this.feed(1);
+    await this.write(Commands.ALIGN_CENTER);
+    await this.write('Restaurant POS System');
+    await this.write(Commands.FEED_LINE);
+    await this.write(new Date().toLocaleString('en-IN', { 
+      day: '2-digit', 
+      month: '2-digit', 
+      year: 'numeric', 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    }));
+    await this.write(Commands.FEED_LINE);
+    await this.write(Commands.ALIGN_LEFT);
     await this.printLine();
     
-    await this.printText('Text Formatting Test:', { bold: true });
-    await this.printText('Normal Text');
-    await this.printText('Bold Text', { bold: true });
-    await this.printText('Underlined Text', { underline: true });
-    await this.printText('Large Text', { size: 'double' });
-    await this.feed(1);
+    // Text formatting
+    await this.write(Commands.BOLD_ON);
+    await this.write('Text Formatting:');
+    await this.write(Commands.FEED_LINE);
+    await this.write(Commands.BOLD_OFF);
+    
+    await this.write('Normal Text');
+    await this.write(Commands.FEED_LINE);
+    
+    await this.write(Commands.BOLD_ON);
+    await this.write('Bold Text');
+    await this.write(Commands.FEED_LINE);
+    await this.write(Commands.BOLD_OFF);
+    
+    await this.write(Commands.UNDERLINE_ON);
+    await this.write('Underlined Text');
+    await this.write(Commands.FEED_LINE);
+    await this.write(Commands.UNDERLINE_OFF);
+    
     await this.printLine();
     
-    await this.printText('Alignment Test:', { bold: true });
-    await this.printText('Left Aligned', { align: 'left' });
-    await this.printText('Center Aligned', { align: 'center' });
-    await this.printText('Right Aligned', { align: 'right' });
-    await this.feed(1);
+    // Alignment test
+    await this.write(Commands.BOLD_ON);
+    await this.write('Alignment Test:');
+    await this.write(Commands.FEED_LINE);
+    await this.write(Commands.BOLD_OFF);
+    
+    await this.write(Commands.ALIGN_LEFT);
+    await this.write('Left Aligned');
+    await this.write(Commands.FEED_LINE);
+    
+    await this.write(Commands.ALIGN_CENTER);
+    await this.write('Center Aligned');
+    await this.write(Commands.FEED_LINE);
+    
+    await this.write(Commands.ALIGN_RIGHT);
+    await this.write('Right Aligned');
+    await this.write(Commands.FEED_LINE);
+    
+    await this.write(Commands.ALIGN_LEFT);
     await this.printLine();
     
-    await this.printText('Column Test:', { bold: true });
+    // Column test
+    await this.write(Commands.BOLD_ON);
+    await this.write('Column Test:');
+    await this.write(Commands.FEED_LINE);
+    await this.write(Commands.BOLD_OFF);
+    
     await this.printColumns('Item 1', '₹100.00');
     await this.printColumns('Item 2', '₹250.00');
+    await this.printLine();
     await this.printColumns('Total', '₹350.00');
     
-    await this.feed(3);
-    await this.printText('✓ Test Successful!', { align: 'center', bold: true });
+    await this.feed(2);
+    await this.write(Commands.ALIGN_CENTER);
+    await this.write(Commands.BOLD_ON);
+    await this.write('Test Successful!');
+    await this.write(Commands.FEED_LINE);
+    await this.write(Commands.BOLD_OFF);
+    await this.write(Commands.ALIGN_LEFT);
     
     await this.cut();
   }
@@ -322,62 +374,107 @@ class BluetoothPrinterService {
   }): Promise<void> {
     await this.initialize();
 
-    // Header
-    await this.printText(invoice.outletName, { bold: true, align: 'center', size: 'double' });
+    // Header - Normal size, not double
+    await this.printText(invoice.outletName, { bold: true, align: 'center' });
     if (invoice.outletAddress) {
-      await this.printText(invoice.outletAddress, { align: 'center' });
+      await this.write(Commands.ALIGN_CENTER);
+      await this.write(invoice.outletAddress.substring(0, 32));
+      await this.write(Commands.FEED_LINE);
     }
     if (invoice.outletPhone) {
-      await this.printText(`Tel: ${invoice.outletPhone}`, { align: 'center' });
+      await this.write(Commands.ALIGN_CENTER);
+      await this.write(`Phone: ${invoice.outletPhone}`);
+      await this.write(Commands.FEED_LINE);
     }
-    await this.feed(1);
-    await this.printLine('double');
+    await this.write(Commands.ALIGN_LEFT);
+    await this.printLine();
 
-    // Invoice details
-    await this.printColumns('Invoice #:', invoice.invoiceNumber);
-    await this.printColumns('Date:', invoice.date);
+    // Invoice details - compact
+    await this.write(`Invoice: ${invoice.invoiceNumber}`);
+    await this.write(Commands.FEED_LINE);
+    await this.write(`Date: ${invoice.date}`);
+    await this.write(Commands.FEED_LINE);
     if (invoice.customerName) {
-      await this.printColumns('Customer:', invoice.customerName);
+      await this.write(`Customer: ${invoice.customerName}`);
+      await this.write(Commands.FEED_LINE);
     }
     await this.printLine();
 
+    // Items header
+    await this.write(Commands.BOLD_ON);
+    await this.write('Item Name         Qty  Price ');
+    await this.write(Commands.FEED_LINE);
+    await this.write(Commands.BOLD_OFF);
+    await this.printLine();
+    
     // Items
-    await this.printText('Item          Qty   Price   Total', { bold: true });
-    await this.printLine();
-    
     for (const item of invoice.items) {
-      await this.printText(item.name);
-      await this.printColumns(
-        `  ${item.quantity} x ₹${item.price.toFixed(2)}`,
-        `₹${item.total.toFixed(2)}`
-      );
+      // Item name (max 32 chars on 58mm)
+      const itemName = item.name.substring(0, 30);
+      await this.write(itemName);
+      await this.write(Commands.FEED_LINE);
+      
+      // Quantity, price and total on same line
+      const qtyStr = `${item.quantity}x`;
+      const priceStr = `₹${item.price.toFixed(2)}`;
+      const totalStr = `₹${item.total.toFixed(2)}`;
+      
+      // Right align total
+      const line = `  ${qtyStr} ${priceStr}`;
+      const spaces = 32 - line.length - totalStr.length;
+      await this.write(line + ' '.repeat(Math.max(spaces, 1)) + totalStr);
+      await this.write(Commands.FEED_LINE);
     }
     
     await this.printLine();
 
-    // Totals
-    await this.printColumns('Subtotal:', `₹${invoice.subtotal.toFixed(2)}`);
+    // Totals - right aligned
+    const subtotalLine = 'Subtotal:';
+    const subtotalValue = `₹${invoice.subtotal.toFixed(2)}`;
+    await this.write(subtotalLine + ' '.repeat(32 - subtotalLine.length - subtotalValue.length) + subtotalValue);
+    await this.write(Commands.FEED_LINE);
     
     if (invoice.tax) {
-      await this.printColumns('Tax:', `₹${invoice.tax.toFixed(2)}`);
+      const taxLine = 'Tax:';
+      const taxValue = `₹${invoice.tax.toFixed(2)}`;
+      await this.write(taxLine + ' '.repeat(32 - taxLine.length - taxValue.length) + taxValue);
+      await this.write(Commands.FEED_LINE);
     }
     
     if (invoice.discount) {
-      await this.printColumns('Discount:', `-₹${invoice.discount.toFixed(2)}`);
+      const discLine = 'Discount:';
+      const discValue = `-₹${invoice.discount.toFixed(2)}`;
+      await this.write(discLine + ' '.repeat(32 - discLine.length - discValue.length) + discValue);
+      await this.write(Commands.FEED_LINE);
     }
     
     await this.printLine('double');
-    await this.printColumns('TOTAL:', `₹${invoice.total.toFixed(2)}`);
+    
+    // Grand total - bold
+    await this.write(Commands.BOLD_ON);
+    const totalLine = 'TOTAL:';
+    const totalValue = `₹${invoice.total.toFixed(2)}`;
+    await this.write(totalLine + ' '.repeat(32 - totalLine.length - totalValue.length) + totalValue);
+    await this.write(Commands.FEED_LINE);
+    await this.write(Commands.BOLD_OFF);
+    
     await this.printLine('double');
 
     if (invoice.paymentMethod) {
-      await this.printColumns('Payment:', invoice.paymentMethod);
+      await this.write(`Payment: ${invoice.paymentMethod}`);
+      await this.write(Commands.FEED_LINE);
     }
 
     // Footer
-    await this.feed(2);
-    await this.printText('Thank you for your visit!', { align: 'center', bold: true });
-    await this.printText('Please visit again', { align: 'center' });
+    await this.feed(1);
+    await this.write(Commands.ALIGN_CENTER);
+    await this.write(Commands.BOLD_ON);
+    await this.write('Thank you for your visit!');
+    await this.write(Commands.FEED_LINE);
+    await this.write(Commands.BOLD_OFF);
+    await this.write('Please visit again');
+    await this.write(Commands.FEED_LINE);
+    await this.write(Commands.ALIGN_LEFT);
     
     await this.cut();
   }
@@ -398,30 +495,62 @@ class BluetoothPrinterService {
   }): Promise<void> {
     await this.initialize();
 
-    // Header
-    await this.printText('KITCHEN ORDER', { bold: true, align: 'center', size: 'triple' });
-    await this.feed(1);
+    // Header - Double size only for KOT title
+    await this.write(Commands.ALIGN_CENTER);
+    await this.write(Commands.SIZE_DOUBLE);
+    await this.write(Commands.BOLD_ON);
+    await this.write('KITCHEN ORDER');
+    await this.write(Commands.FEED_LINE);
+    await this.write(Commands.SIZE_NORMAL);
+    await this.write(Commands.BOLD_OFF);
+    await this.write(Commands.ALIGN_LEFT);
     await this.printLine('double');
 
-    // Order details
-    await this.printColumns('Order #:', kot.orderNumber);
+    // Order details - Compact
+    await this.write(`KOT: ${kot.orderNumber}`);
+    await this.write(Commands.FEED_LINE);
+    
     if (kot.tableNumber) {
-      await this.printColumns('Table:', kot.tableNumber);
+      await this.write(Commands.BOLD_ON);
+      await this.write(`Table No: ${kot.tableNumber}`);
+      await this.write(Commands.FEED_LINE);
+      await this.write(Commands.BOLD_OFF);
     }
-    await this.printColumns('Time:', kot.date);
+    
+    await this.write(`Time: ${kot.date}`);
+    await this.write(Commands.FEED_LINE);
     await this.printLine('double');
 
-    // Items
+    // Items - Clear and readable
+    await this.write(Commands.BOLD_ON);
+    await this.write('Item                      QTY');
+    await this.write(Commands.FEED_LINE);
+    await this.write(Commands.BOLD_OFF);
+    await this.printLine();
+    
     for (const item of kot.items) {
-      await this.printText(`${item.quantity}x ${item.name}`, { bold: true, size: 'double' });
+      // Item name
+      const itemName = item.name.substring(0, 26);
+      const qtyStr = String(item.quantity);
+      const spaces = 32 - itemName.length - qtyStr.length;
+      
+      await this.write(itemName + ' '.repeat(Math.max(spaces, 1)) + qtyStr);
+      await this.write(Commands.FEED_LINE);
+      
+      // Notes if any
       if (item.notes) {
-        await this.printText(`   Note: ${item.notes}`);
+        await this.write(`  Note: ${item.notes.substring(0, 28)}`);
+        await this.write(Commands.FEED_LINE);
       }
-      await this.feed(1);
     }
 
     await this.printLine('double');
-    await this.printText(kot.outletName, { align: 'center' });
+    
+    // Footer
+    await this.write(Commands.ALIGN_CENTER);
+    await this.write(kot.outletName);
+    await this.write(Commands.FEED_LINE);
+    await this.write(Commands.ALIGN_LEFT);
     
     await this.cut();
   }

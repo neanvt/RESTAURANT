@@ -16,11 +16,13 @@ export const connectDatabase = async (): Promise<typeof mongoose> => {
       process.env.MONGODB_URI || "mongodb://localhost:27017/restaurant_pos";
 
     logger.info("🔌 Connecting to MongoDB...");
-    logger.info(`📍 MongoDB URI: ${mongoUri.replace(/\/\/.*:.*@/, '//*****:*****@')}`);
+    logger.info(
+      `📍 MongoDB URI: ${mongoUri.replace(/\/\/.*:.*@/, "//*****:*****@")}`
+    );
 
     // Set mongoose options for better serverless performance
-    mongoose.set('strictQuery', false);
-    
+    mongoose.set("strictQuery", false);
+
     const connection = await mongoose.connect(mongoUri, {
       serverSelectionTimeoutMS: 5000, // Timeout after 5s instead of 30s
       socketTimeoutMS: 45000,
@@ -43,7 +45,7 @@ export const connectDatabase = async (): Promise<typeof mongoose> => {
   } catch (error) {
     logger.error("❌ Failed to connect to MongoDB:", error);
     cachedConnection = null;
-    
+
     // In serverless, don't exit - just throw the error
     if (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME) {
       throw error;

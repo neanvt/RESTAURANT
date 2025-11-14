@@ -83,7 +83,23 @@ export default function CreateOrderPage() {
       await fetchCurrentOutlet();
     };
     loadData();
-  }, []);
+    
+    // Check for Bluetooth printer on page load (mobile only)
+    if (isPrinterSupported && !isPrinterConnected) {
+      // Show a subtle reminder to connect printer
+      const timer = setTimeout(() => {
+        toast.info("Tip: Connect Bluetooth printer for direct printing", {
+          duration: 5000,
+          action: {
+            label: "Connect",
+            onClick: () => connectPrinter(),
+          },
+        });
+      }, 2000); // Show after 2 seconds
+      
+      return () => clearTimeout(timer);
+    }
+  }, [isPrinterSupported, isPrinterConnected]);
 
   const handleCategorySelect = (categoryId: string | null) => {
     setShowFavourite(false);
@@ -206,28 +222,35 @@ export default function CreateOrderPage() {
           return;
         }
 
-        // Try Bluetooth printing first if supported
+        // Format date for printing
+        const now = new Date();
+        const formattedDate = `${now.getDate().toString().padStart(2, '0')}/${(now.getMonth() + 1).toString().padStart(2, '0')}/${now.getFullYear()} ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+        
+        // Prepare KOT data
+        const kotData = {
+          outletName: currentOutlet?.businessName || "Restaurant",
+          orderNumber: order.orderNumber || orderId,
+          tableNumber: tableNumber || order.table || "",
+          date: formattedDate,
+          items: cart.map((item) => ({
+            name: item.name,
+            quantity: item.cartQuantity,
+            notes: item.notes,
+          })),
+        };
+        
+        // Try Bluetooth printing first if supported and connected
         if (isPrinterSupported && isPrinterConnected) {
           try {
-            const kotData = {
-              outletName: currentOutlet?.businessName || "Restaurant",
-              orderNumber: order.orderNumber || orderId,
-              tableNumber: tableNumber || order.table || "",
-              date: new Date().toLocaleString(),
-              items: cart.map((item) => ({
-                name: item.name,
-                quantity: item.cartQuantity,
-                notes: item.notes,
-              })),
-            };
-            
             await printBluetoothKOT(kotData);
-            console.log("KOT printed via Bluetooth");
+            console.log("✅ KOT printed via Bluetooth");
+            toast.success("KOT sent to Bluetooth printer!");
           } catch (err) {
             console.error("Bluetooth print error:", err);
+            toast.error("Bluetooth print failed. Check connection.");
             // Fallback to server printing
             api.post(`/kots/${kotId}/print`).catch((e: unknown) => {
-              console.error("Print error:", e);
+              console.error("Server print error:", e);
             });
           }
         } else {
@@ -235,7 +258,7 @@ export default function CreateOrderPage() {
           api
             .post(`/kots/${kotId}/print`)
             .then(() => {
-              console.log("KOT sent to printer");
+              console.log("KOT sent to server printer");
             })
             .catch((err: unknown) => {
               console.error("Print error:", err);
@@ -340,6 +363,10 @@ export default function CreateOrderPage() {
 
       // Check if Bluetooth printer is available on mobile
       if (isPrinterSupported) {
+        // Format date for printing
+        const invoiceDate = new Date(currentInvoice.createdAt || Date.now());
+        const formattedDate = `${invoiceDate.getDate().toString().padStart(2, '0')}/${(invoiceDate.getMonth() + 1).toString().padStart(2, '0')}/${invoiceDate.getFullYear()} ${invoiceDate.getHours().toString().padStart(2, '0')}:${invoiceDate.getMinutes().toString().padStart(2, '0')}`;
+        
         // Format invoice data for Bluetooth printer
         const invoiceData = {
           outletName: currentOutlet?.businessName || "Restaurant",
@@ -347,7 +374,7 @@ export default function CreateOrderPage() {
                          `${currentOutlet?.address?.street}, ${currentOutlet?.address?.city}`,
           outletPhone: currentOutlet?.contact?.phone,
           invoiceNumber: currentInvoice.invoiceNumber || invoiceId,
-          date: new Date(currentInvoice.createdAt || Date.now()).toLocaleString(),
+          date: formattedDate,
           items: currentInvoice.items?.map((item: any) => ({
             name: item.item?.name || item.name || "Item",
             quantity: item.quantity || 1,

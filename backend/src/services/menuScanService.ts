@@ -12,7 +12,9 @@ try {
     });
     console.log("✅ OpenAI client initialized successfully");
   } else {
-    console.warn("⚠️ OpenAI API key not found. Menu scan features will be disabled.");
+    console.warn(
+      "⚠️ OpenAI API key not found. Menu scan features will be disabled."
+    );
   }
 } catch (error) {
   console.error("❌ Failed to initialize OpenAI client:", error);
@@ -45,7 +47,9 @@ export class MenuScanService {
 
     // Check if OpenAI is available
     if (!openai) {
-      throw new Error("OpenAI service is not available. Please configure OPENAI_API_KEY environment variable.");
+      throw new Error(
+        "OpenAI service is not available. Please configure OPENAI_API_KEY environment variable."
+      );
     }
 
     try {

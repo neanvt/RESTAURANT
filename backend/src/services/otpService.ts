@@ -9,7 +9,9 @@ interface OTPVerificationResult {
 class OTPService {
   constructor() {
     // Firebase Admin is already initialized in config/firebaseAdmin.ts
-    console.log("🔧 OTPService initialized, using shared Firebase Admin instance");
+    console.log(
+      "🔧 OTPService initialized, using shared Firebase Admin instance"
+    );
   }
 
   /**

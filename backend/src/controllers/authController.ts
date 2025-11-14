@@ -94,7 +94,7 @@ export const verifyOTP = async (req: Request, res: Response): Promise<void> => {
   try {
     console.log("🔐 verifyOTP endpoint called");
     console.log("- Request body keys:", Object.keys(req.body));
-    
+
     const { idToken, name } = req.body;
 
     if (!idToken) {
@@ -128,7 +128,7 @@ export const verifyOTP = async (req: Request, res: Response): Promise<void> => {
 
     console.log("✅ OTP verified, phone:", verificationResult.phone);
     console.log("👤 Finding or creating user...");
-    
+
     // Find or create user
     const user = await authService.findOrCreateUser(
       verificationResult.phone,
@@ -163,13 +163,14 @@ export const verifyOTP = async (req: Request, res: Response): Promise<void> => {
     console.error("- Error name:", error.name);
     console.error("- Error message:", error.message);
     console.error("- Error stack:", error.stack);
-    
+
     res.status(500).json({
       success: false,
       error: {
         code: "INTERNAL_ERROR",
         message: "An error occurred during verification",
-        details: process.env.NODE_ENV === "development" ? error.message : undefined,
+        details:
+          process.env.NODE_ENV === "development" ? error.message : undefined,
       },
     });
   }

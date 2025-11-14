@@ -8,7 +8,11 @@ const logFormat = printf(({ level, message, timestamp, stack }) => {
 });
 
 // Determine if we're running in a serverless environment (like Vercel)
-const isServerless = !!(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.FUNCTIONS_WORKER);
+const isServerless = !!(
+  process.env.VERCEL ||
+  process.env.AWS_LAMBDA_FUNCTION_NAME ||
+  process.env.FUNCTIONS_WORKER
+);
 
 // Create logger instance
 const logger = winston.createLogger({
@@ -30,15 +34,19 @@ const logger = winston.createLogger({
 if (!isServerless && process.env.NODE_ENV !== "test") {
   try {
     // File transport for errors
-    logger.add(new winston.transports.File({
-      filename: "logs/error.log",
-      level: "error",
-    }));
-    
+    logger.add(
+      new winston.transports.File({
+        filename: "logs/error.log",
+        level: "error",
+      })
+    );
+
     // File transport for all logs
-    logger.add(new winston.transports.File({
-      filename: "logs/combined.log",
-    }));
+    logger.add(
+      new winston.transports.File({
+        filename: "logs/combined.log",
+      })
+    );
   } catch (error) {
     // If file logging fails, just continue with console logging
     console.warn("File logging not available, using console only");
