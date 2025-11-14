@@ -68,14 +68,14 @@ const Commands = {
 };
 
 export interface BluetoothPrinterDevice {
-  device: BluetoothDevice;
-  characteristic: BluetoothRemoteGATTCharacteristic | null;
+  device: any; // BluetoothDevice
+  characteristic: any | null; // BluetoothRemoteGATTCharacteristic
   connected: boolean;
 }
 
 class BluetoothPrinterService {
-  private device: BluetoothDevice | null = null;
-  private characteristic: BluetoothRemoteGATTCharacteristic | null = null;
+  private device: any | null = null; // BluetoothDevice
+  private characteristic: any | null = null; // BluetoothRemoteGATTCharacteristic
   private encoder = new TextEncoder();
   
   // Standard Bluetooth service UUID for serial port
