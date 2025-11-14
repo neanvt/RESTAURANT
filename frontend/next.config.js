@@ -158,6 +158,11 @@ const nextConfig = {
       },
       {
         protocol: "https",
+        hostname: "restaurant-backend-rho.vercel.app",
+        pathname: "/uploads/**",
+      },
+      {
+        protocol: "https",
         hostname: "firebasestorage.googleapis.com",
         pathname: "/**",
       },
