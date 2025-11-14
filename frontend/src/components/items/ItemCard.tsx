@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Star, Plus, Minus } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { getFullImageUrl } from "@/lib/imageUtils";
 
 interface ItemCardProps {
   item: Item;
@@ -59,9 +60,9 @@ export function ItemCard({
     >
       {/* Image */}
       <div className="relative aspect-square w-full overflow-hidden bg-gray-100">
-        {item.image?.url ? (
+        {item.image?.url && getFullImageUrl(item.image.url) ? (
           <Image
-            src={`${process.env.NEXT_PUBLIC_API_URL}${item.image.url}`}
+            src={getFullImageUrl(item.image.url)!}
             alt={item.name}
             fill
             className="object-cover"

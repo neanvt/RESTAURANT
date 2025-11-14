@@ -29,6 +29,7 @@ import { useOutletStore } from "@/store/outletStore";
 import { Item } from "@/types/item";
 import { toast } from "sonner";
 import Image from "next/image";
+import { getFullImageUrl } from "@/lib/imageUtils";
 import KOTPreview from "@/components/orders/KOTPreview";
 import InvoicePreview from "@/components/orders/InvoicePreview";
 import api from "@/lib/api/axios-config";
@@ -424,9 +425,9 @@ export default function CreateOrderPage() {
                 >
                   {/* Image with Overlay Controls */}
                   <div className="relative h-40 bg-gray-100">
-                    {item.image?.url ? (
+                    {item.image?.url && getFullImageUrl(item.image.url) ? (
                       <Image
-                        src={`${process.env.NEXT_PUBLIC_API_URL}${item.image.url}`}
+                        src={getFullImageUrl(item.image.url)!}
                         alt={item.name}
                         fill
                         sizes="50vw"

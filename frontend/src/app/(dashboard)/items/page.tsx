@@ -12,6 +12,7 @@ import { Item } from "@/types/item";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
+import { getFullImageUrl } from "@/lib/imageUtils";
 
 export default function ItemsPage() {
   const router = useRouter();
@@ -139,9 +140,9 @@ export default function ItemsPage() {
                   <div className="flex items-center gap-4 p-3">
                     {/* Thumbnail */}
                     <div className="relative w-20 h-20 flex-shrink-0 rounded-lg overflow-hidden bg-gray-100">
-                      {item.image?.url ? (
+                      {item.image?.url && getFullImageUrl(item.image.url) ? (
                         <Image
-                          src={`${process.env.NEXT_PUBLIC_API_URL}${item.image.url}`}
+                          src={getFullImageUrl(item.image.url)!}
                           alt={item.name}
                           fill
                           sizes="80px"

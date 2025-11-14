@@ -25,6 +25,7 @@ import { useItemStore } from "@/store/itemStore";
 import { Item } from "@/types/item";
 import { toast } from "sonner";
 import Image from "next/image";
+import { getFullImageUrl } from "@/lib/imageUtils";
 
 const itemFormSchema = z.object({
   name: z.string().min(1, "Item name is required").max(100),
@@ -193,7 +194,7 @@ export function ItemForm({ item, mode }: ItemFormProps) {
                 />
               ) : (
                 <Image
-                  src={`${process.env.NEXT_PUBLIC_API_URL}${imageUrl}`}
+                  src={getFullImageUrl(imageUrl) || imageUrl}
                   alt="Item preview"
                   fill
                   sizes="(max-width: 768px) 100vw, 512px"
