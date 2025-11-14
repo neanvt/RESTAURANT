@@ -9,21 +9,44 @@ import logger from "./utils/logger";
 
 const PORT = process.env.PORT || 5000;
 
-// Connect to database
-connectDatabase();
+// Connect to database and start server
+const startServer = async () => {
+  try {
+    // Connect to database first
+    await connectDatabase();
+    
+    // Start server
+    const server = app.listen(PORT, () => {
+      logger.info(`🚀 Server running on port ${PORT}`);
+      logger.info(`📝 Environment: ${process.env.NODE_ENV}`);
+    });
 
-// Start server
-const server = app.listen(PORT, () => {
-  logger.info(`🚀 Server running on port ${PORT}`);
-  logger.info(`📝 Environment: ${process.env.NODE_ENV}`);
+    return server;
+  } catch (error) {
+    logger.error("Failed to start server:", error);
+    process.exit(1);
+  }
+};
+
+// Start the server (but don't wait for it in serverless environments)
+let serverInstance: any = null;
+startServer().then((server) => {
+  serverInstance = server;
 });
+
+// For Vercel serverless, export the app directly
+export default app;
 
 // Handle unhandled promise rejections
 process.on("unhandledRejection", (err: Error) => {
   logger.error("Unhandled Rejection:", err);
-  server.close(() => {
+  if (serverInstance) {
+    serverInstance.close(() => {
+      process.exit(1);
+    });
+  } else {
     process.exit(1);
-  });
+  }
 });
 
 // Handle uncaught exceptions
@@ -35,7 +58,9 @@ process.on("uncaughtException", (err: Error) => {
 // Graceful shutdown
 process.on("SIGTERM", () => {
   logger.info("SIGTERM signal received: closing HTTP server");
-  server.close(() => {
-    logger.info("HTTP server closed");
-  });
+  if (serverInstance) {
+    serverInstance.close(() => {
+      logger.info("HTTP server closed");
+    });
+  }
 });

@@ -92,9 +92,13 @@ export const sendOTP = async (req: Request, res: Response): Promise<void> => {
  */
 export const verifyOTP = async (req: Request, res: Response): Promise<void> => {
   try {
+    console.log("🔐 verifyOTP endpoint called");
+    console.log("- Request body keys:", Object.keys(req.body));
+    
     const { idToken, name } = req.body;
 
     if (!idToken) {
+      console.log("❌ Missing idToken in request");
       res.status(400).json({
         success: false,
         error: {
@@ -105,10 +109,13 @@ export const verifyOTP = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
+    console.log("📞 Calling otpService.verifyOTP...");
     // Verify OTP with Firebase
     const verificationResult = await otpService.verifyOTP(idToken);
+    console.log("📞 verifyOTP result:", verificationResult);
 
     if (!verificationResult.success || !verificationResult.phone) {
+      console.log("❌ OTP verification failed:", verificationResult.error);
       res.status(401).json({
         success: false,
         error: {
@@ -119,14 +126,20 @@ export const verifyOTP = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
+    console.log("✅ OTP verified, phone:", verificationResult.phone);
+    console.log("👤 Finding or creating user...");
+    
     // Find or create user
     const user = await authService.findOrCreateUser(
       verificationResult.phone,
       name
     );
+    console.log("✅ User found/created:", user._id);
 
+    console.log("🔑 Generating tokens...");
     // Generate tokens
     const tokens = authService.generateTokens(user);
+    console.log("✅ Tokens generated successfully");
 
     res.status(200).json({
       success: true,
@@ -146,12 +159,17 @@ export const verifyOTP = async (req: Request, res: Response): Promise<void> => {
       },
     });
   } catch (error: any) {
-    console.error("Error in verifyOTP:", error);
+    console.error("❌ Error in verifyOTP controller:", error);
+    console.error("- Error name:", error.name);
+    console.error("- Error message:", error.message);
+    console.error("- Error stack:", error.stack);
+    
     res.status(500).json({
       success: false,
       error: {
         code: "INTERNAL_ERROR",
         message: "An error occurred during verification",
+        details: process.env.NODE_ENV === "development" ? error.message : undefined,
       },
     });
   }
@@ -378,7 +396,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
   try {
     console.log("🔐 Login attempt started");
     console.log("- Request body keys:", Object.keys(req.body));
-    
+
     const { identifier, password } = req.body; // identifier: phone or email
 
     if (!identifier || !password) {
@@ -463,13 +481,14 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     console.error("- Error name:", error.name);
     console.error("- Error message:", error.message);
     console.error("- Error stack:", error.stack);
-    
+
     res.status(500).json({
       success: false,
       error: {
         code: "INTERNAL_ERROR",
         message: "An error occurred during login",
-        details: process.env.NODE_ENV === "development" ? error.message : undefined
+        details:
+          process.env.NODE_ENV === "development" ? error.message : undefined,
       },
     });
   }
@@ -524,12 +543,10 @@ export const setPassword = async (
     const phone = verificationResult.phone;
     const user = await User.findOne({ phone, isActive: true });
     if (!user) {
-      res
-        .status(404)
-        .json({
-          success: false,
-          error: { code: "USER_NOT_FOUND", message: "User not found" },
-        });
+      res.status(404).json({
+        success: false,
+        error: { code: "USER_NOT_FOUND", message: "User not found" },
+      });
       return;
     }
 
@@ -544,14 +561,12 @@ export const setPassword = async (
       .json({ success: true, message: "Password set successfully" });
   } catch (error: any) {
     console.error("Error in setPassword:", error);
-    res
-      .status(500)
-      .json({
-        success: false,
-        error: {
-          code: "INTERNAL_ERROR",
-          message: "An error occurred while setting password",
-        },
-      });
+    res.status(500).json({
+      success: false,
+      error: {
+        code: "INTERNAL_ERROR",
+        message: "An error occurred while setting password",
+      },
+    });
   }
 };
