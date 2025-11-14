@@ -82,3 +82,10 @@ logs/
 *.env
 !.env.example
 *firebase-adminsdk*.jsonrestopos-*-firebase-adminsdk-*.json
+
+# Firebase service account credentials
+*firebase-adminsdk*.json
+
+# Swadika build artifacts
+Swadika/API/bin/
+Swadika/API/obj/

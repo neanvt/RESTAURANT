@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import itemService from "../services/itemService";
 import logger from "../utils/logger";
-import { upload } from "../middleware/upload";
+import { cloudinaryUpload, uploadAndOptimizeToCloudinary, deleteFromCloudinary } from "../middleware/cloudinaryUpload";
 
 /**
  * Get all items with filters
@@ -289,7 +289,7 @@ export const deleteItem = async (
  * Upload item image
  */
 export const uploadItemImage = [
-  upload.single("image"),
+  cloudinaryUpload.single("image"),
   async (req: Request, res: Response): Promise<void> => {
     try {
       const outletId = req.outletId;
@@ -317,11 +317,23 @@ export const uploadItemImage = [
         return;
       }
 
-      const imagePath = `/uploads/outlets/${req.file.filename}`;
+      // Upload to Cloudinary
+      const imageUrl = await uploadAndOptimizeToCloudinary(
+        req.file.buffer,
+        "items",
+        "item"
+      );
+
+      // Get existing item to delete old image if exists
+      const existingItem = await itemService.getItemById(id, outletId);
+      if (existingItem?.image?.url) {
+        // Delete old image from Cloudinary
+        await deleteFromCloudinary(existingItem.image.url);
+      }
 
       const item = await itemService.updateItem(id, outletId, {
         image: {
-          url: imagePath,
+          url: imageUrl,
           isAiGenerated: false,
         },
       });

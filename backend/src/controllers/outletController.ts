@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import outletService from "../services/outletService";
+import { uploadAndOptimizeToCloudinary, deleteFromCloudinary } from "../middleware/cloudinaryUpload";
 import { IOutlet } from "../models/Outlet";
 
 /**
@@ -369,10 +370,21 @@ export const uploadOutletLogo = async (
       return;
     }
 
-    // File path relative to project root - include outlets subdirectory
-    const logoPath = `/uploads/outlets/${req.file.filename}`;
+    // Upload to Cloudinary
+    const logoUrl = await uploadAndOptimizeToCloudinary(
+      req.file.buffer,
+      "outlets",
+      "outlet"
+    );
 
-    const outlet = await outletService.updateOutletLogo(id, userId, logoPath);
+    // Get existing outlet to delete old logo if exists
+    const existingOutlet = await outletService.getOutletById(id, userId);
+    if (existingOutlet?.logo) {
+      // Delete old logo from Cloudinary
+      await deleteFromCloudinary(existingOutlet.logo);
+    }
+
+    const outlet = await outletService.updateOutletLogo(id, userId, logoUrl);
 
     if (!outlet) {
       res.status(404).json({

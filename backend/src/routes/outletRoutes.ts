@@ -13,7 +13,7 @@ import {
 } from "../controllers/outletController";
 import { authenticate } from "../middleware/authMiddleware";
 import { verifyOutletAccess } from "../middleware/outletMiddleware";
-import { upload, processImage, handleMulterError } from "../middleware/upload";
+import { cloudinaryUpload } from "../middleware/cloudinaryUpload";
 
 const router = Router();
 
@@ -74,13 +74,7 @@ router.post("/:id/select", selectOutlet);
  * @desc    Upload outlet logo
  * @access  Private (owner only)
  */
-router.put(
-  "/:id/logo",
-  upload.single("logo"),
-  handleMulterError,
-  processImage,
-  uploadOutletLogo
-);
+router.put("/:id/logo", cloudinaryUpload.single("logo"), uploadOutletLogo);
 
 /**
  * @route   DELETE /api/outlets/:id/logo
