@@ -1,9 +1,10 @@
-import express, { Application, Request, Response } from "express";
+import express, { Application, Request, Response, NextFunction } from "express";
 import cors from "cors";
 import helmet from "helmet";
 import morgan from "morgan";
 import path from "path";
 import { errorHandler } from "./middleware/errorHandler";
+import { connectDatabase } from "./config/database";
 import authRoutes from "./routes/authRoutes";
 import outletRoutes from "./routes/outletRoutes";
 import categoryRoutes from "./routes/categoryRoutes";
@@ -35,15 +36,18 @@ app.use(
 // Direct CORS configuration to fix immediate issues
 const allowedOrigins = [
   "https://restaurant-frontend-yvss.vercel.app",
-  "https://restaurant-frontend-bice.vercel.app", 
+  "https://restaurant-frontend-bice.vercel.app",
   "http://localhost:3000",
-  "http://localhost:4200"
+  "http://localhost:4200",
 ];
 
 // Add environment variable support as fallback
 const envOrigins = process.env.ALLOWED_ORIGINS || process.env.CORS_ORIGIN;
 if (envOrigins) {
-  const additionalOrigins = envOrigins.split(",").map(s => s.trim()).filter(Boolean);
+  const additionalOrigins = envOrigins
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
   allowedOrigins.push(...additionalOrigins);
 }
 
@@ -55,27 +59,29 @@ app.use(
   cors({
     origin: (origin, callback) => {
       console.log(`🌐 CORS request from origin: ${origin}`);
-      
+
       // Allow requests with no origin (mobile apps, curl, postman, etc.)
       if (!origin) {
         console.log("✅ Allowing request with no origin");
         return callback(null, true);
       }
-      
+
       // Check if origin is in allowed list
       if (allowedOrigins.includes(origin)) {
         console.log("✅ Origin allowed");
         return callback(null, true);
       }
-      
+
       // Log and reject
-      console.warn(`❌ CORS blocked: ${origin}. Allowed: ${allowedOrigins.join(", ")}`);
+      console.warn(
+        `❌ CORS blocked: ${origin}. Allowed: ${allowedOrigins.join(", ")}`
+      );
       return callback(new Error(`CORS: Origin ${origin} not allowed`));
     },
     credentials: true,
     optionsSuccessStatus: 200,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"]
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
   })
 );
 
@@ -98,6 +104,23 @@ app.use(
   },
   express.static(path.join(process.cwd(), "uploads"))
 );
+
+// Database connection middleware for serverless
+app.use(async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    await connectDatabase();
+    next();
+  } catch (error) {
+    console.error("❌ Database connection failed:", error);
+    res.status(503).json({
+      success: false,
+      error: {
+        code: "DATABASE_UNAVAILABLE",
+        message: "Database connection failed. Please try again later.",
+      },
+    });
+  }
+});
 
 // Health check endpoint
 app.get("/api/health", (_req: Request, res: Response) => {
