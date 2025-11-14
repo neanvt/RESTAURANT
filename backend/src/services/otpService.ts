@@ -1,4 +1,4 @@
-import admin from "firebase-admin";
+import admin from "../config/firebaseAdmin";
 
 interface OTPVerificationResult {
   success: boolean;
@@ -7,66 +7,9 @@ interface OTPVerificationResult {
 }
 
 class OTPService {
-  private initialized = false;
-
   constructor() {
-    this.initializeFirebase();
-  }
-
-  /**
-   * Initialize Firebase Admin SDK
-   */
-  private initializeFirebase() {
-    try {
-      if (!this.initialized && !admin.apps.length) {
-        const projectId = process.env.FIREBASE_PROJECT_ID;
-        const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(
-          /\\n/g,
-          "\n"
-        );
-        const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-
-        console.log("🔧 Firebase Admin SDK initialization...");
-        console.log(`   Project ID: ${projectId ? "✓" : "✗"}`);
-        console.log(
-          `   Private Key: ${
-            privateKey ? "✓ (length: " + privateKey.length + ")" : "✗"
-          }`
-        );
-        console.log(`   Client Email: ${clientEmail ? "✓" : "✗"}`);
-
-        if (!projectId || !privateKey || !clientEmail) {
-          console.error(
-            "❌ Firebase credentials not found. OTP service will not be available."
-          );
-          console.error(
-            `   Missing: ${!projectId ? "FIREBASE_PROJECT_ID " : ""}${
-              !privateKey ? "FIREBASE_PRIVATE_KEY " : ""
-            }${!clientEmail ? "FIREBASE_CLIENT_EMAIL" : ""}`
-          );
-          return;
-        }
-
-        admin.initializeApp({
-          credential: admin.credential.cert({
-            projectId,
-            privateKey,
-            clientEmail,
-          }),
-        });
-
-        this.initialized = true;
-        console.log("✅ Firebase Admin SDK initialized successfully");
-      } else if (this.initialized) {
-        console.log("ℹ️  Firebase Admin SDK already initialized");
-      }
-    } catch (error) {
-      console.error("❌ Failed to initialize Firebase Admin SDK:", error);
-      if (error instanceof Error) {
-        console.error("   Error message:", error.message);
-        console.error("   Error stack:", error.stack);
-      }
-    }
+    // Firebase Admin is already initialized in config/firebaseAdmin.ts
+    console.log("🔧 OTPService initialized, using shared Firebase Admin instance");
   }
 
   /**
@@ -111,15 +54,19 @@ class OTPService {
    */
   async verifyOTP(idToken: string): Promise<OTPVerificationResult> {
     try {
-      if (!this.initialized) {
+      // Check if Firebase Admin is initialized
+      if (!admin.apps.length) {
+        console.error("❌ Firebase Admin is not initialized");
         return {
           success: false,
           error: "Firebase is not initialized",
         };
       }
 
+      console.log("🔍 Verifying Firebase ID token...");
       // Verify the Firebase ID token
       const decodedToken = await admin.auth().verifyIdToken(idToken);
+      console.log("✅ Firebase ID token verified successfully");
 
       // Extract phone number from the token
       const phone = decodedToken.phone_number;
