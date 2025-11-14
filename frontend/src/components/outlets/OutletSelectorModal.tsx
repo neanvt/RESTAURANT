@@ -15,6 +15,7 @@ import { useOutletStore } from "@/store/outletStore";
 import { useAuthStore } from "@/store/authStore";
 import { toast } from "sonner";
 import Image from "next/image";
+import { getFullImageUrl } from "@/lib/imageUtils";
 
 interface OutletSelectorModalProps {
   isOpen: boolean;
@@ -165,10 +166,10 @@ export default function OutletSelectorModal({
                     >
                       <div className="flex items-center gap-3">
                         {/* Outlet Icon/Logo */}
-                        {outlet.logo ? (
+                        {outlet.logo && getFullImageUrl(outlet.logo) ? (
                           <div className="relative w-12 h-12 rounded-lg overflow-hidden border border-gray-200 flex-shrink-0">
                             <Image
-                              src={`${process.env.NEXT_PUBLIC_API_URL}${outlet.logo}`}
+                              src={getFullImageUrl(outlet.logo)!}
                               alt={outlet.businessName}
                               fill
                               className="object-cover"

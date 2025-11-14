@@ -21,6 +21,7 @@ import { useOutletStore } from "@/store/outletStore";
 import { toast } from "sonner";
 // use a standard img tag for logo previews so we can preserve aspect ratio (object-contain)
 import * as outletApi from "@/lib/api/outlets";
+import { getFullImageUrl } from "@/lib/imageUtils";
 
 export default function EditOutletPage() {
   const router = useRouter();
@@ -301,7 +302,8 @@ export default function EditOutletPage() {
                     ref={imgRef}
                     src={
                       logoPreview ||
-                      `${process.env.NEXT_PUBLIC_API_URL}${currentLogo}`
+                      getFullImageUrl(currentLogo) ||
+                      ""
                     }
                     alt="Logo preview"
                     className={
@@ -332,7 +334,8 @@ export default function EditOutletPage() {
                         try {
                           const src =
                             logoPreview ||
-                            `${process.env.NEXT_PUBLIC_API_URL}${currentLogo}`;
+                            getFullImageUrl(currentLogo) ||
+                            "";
                           const cropped = await cropImageToSize(src, 512, 256);
                           setLogoPreview(cropped.preview);
                           setLogoFile(cropped.file);

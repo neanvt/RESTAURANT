@@ -17,6 +17,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useOutletStore } from "@/store/outletStore";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
+import { getFullImageUrl } from "@/lib/imageUtils";
 
 export default function OutletsPage() {
   const router = useRouter();
@@ -144,10 +145,10 @@ export default function OutletsPage() {
                 <CardContent className="p-4">
                   <div className="flex items-start gap-3">
                     {/* Logo */}
-                    {outlet.logo ? (
+                    {outlet.logo && getFullImageUrl(outlet.logo) ? (
                       <div className="relative w-16 h-16 rounded-lg overflow-hidden border-2 border-gray-200 flex-shrink-0">
                         <Image
-                          src={`${process.env.NEXT_PUBLIC_API_URL}${outlet.logo}`}
+                          src={getFullImageUrl(outlet.logo)!}
                           alt={outlet.businessName}
                           fill
                           className="object-cover"

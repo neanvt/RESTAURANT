@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useOutletStore } from "@/store/outletStore";
 import { toast } from "sonner";
+import { getFullImageUrl } from "@/lib/imageUtils";
 // use an img tag for logo previews so we can preserve aspect ratio (object-contain)
 
 export default function BusinessSettingsPage() {
@@ -239,7 +240,7 @@ export default function BusinessSettingsPage() {
   const displayLogo =
     logoPreview ||
     (currentOutlet.logo
-      ? `${process.env.NEXT_PUBLIC_API_URL}${currentOutlet.logo}`
+      ? getFullImageUrl(currentOutlet.logo)
       : null);
 
   return (

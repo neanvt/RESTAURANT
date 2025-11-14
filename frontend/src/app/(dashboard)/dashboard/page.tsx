@@ -19,6 +19,7 @@ import { useOutletStore } from "@/store/outletStore";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
 import OutletSelectorModal from "@/components/outlets/OutletSelectorModal";
+import { getFullImageUrl } from "@/lib/imageUtils";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -88,10 +89,10 @@ export default function DashboardPage() {
           </button>
 
           {/* Logo */}
-          {currentOutlet?.logo ? (
+          {currentOutlet?.logo && getFullImageUrl(currentOutlet.logo) ? (
             <div className="relative w-10 h-10 rounded-full overflow-hidden border-2 border-gray-200">
               <Image
-                src={`${process.env.NEXT_PUBLIC_API_URL}${currentOutlet.logo}`}
+                src={getFullImageUrl(currentOutlet.logo)!}
                 alt={currentOutlet.businessName}
                 fill
                 className="object-cover"

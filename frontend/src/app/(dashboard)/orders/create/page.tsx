@@ -16,6 +16,7 @@ import {
   Receipt,
   X,
   ArrowLeft,
+  Bluetooth,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,6 +31,7 @@ import { Item } from "@/types/item";
 import { toast } from "sonner";
 import Image from "next/image";
 import { getFullImageUrl } from "@/lib/imageUtils";
+import { useBluetoothPrinter } from "@/hooks/useBluetoothPrinter";
 import KOTPreview from "@/components/orders/KOTPreview";
 import InvoicePreview from "@/components/orders/InvoicePreview";
 import api from "@/lib/api/axios-config";
@@ -45,6 +47,15 @@ export default function CreateOrderPage() {
   const { createOrder, generateKOT, holdOrder } = useOrderStore();
   const { categories, fetchCategories } = useCategoryStore();
   const { currentOutlet, fetchCurrentOutlet } = useOutletStore();
+  
+  // Bluetooth printer hook
+  const { 
+    isSupported: isPrinterSupported,
+    isConnected: isPrinterConnected,
+    printInvoice: printBluetoothInvoice,
+    printKOT: printBluetoothKOT,
+    connect: connectPrinter 
+  } = useBluetoothPrinter();
 
   const [cart, setCart] = useState<CartItem[]>([]);
   const [customerName, setCustomerName] = useState("");
@@ -195,15 +206,41 @@ export default function CreateOrderPage() {
           return;
         }
 
-        // Trigger KOT print in background
-        api
-          .post(`/kots/${kotId}/print`)
-          .then(() => {
-            console.log("KOT sent to printer");
-          })
-          .catch((err: unknown) => {
-            console.error("Print error:", err);
-          });
+        // Try Bluetooth printing first if supported
+        if (isPrinterSupported && isPrinterConnected) {
+          try {
+            const kotData = {
+              outletName: currentOutlet?.businessName || "Restaurant",
+              orderNumber: order.orderNumber || orderId,
+              tableNumber: tableNumber || order.table || "",
+              date: new Date().toLocaleString(),
+              items: cart.map((item) => ({
+                name: item.name,
+                quantity: item.cartQuantity,
+                notes: item.notes,
+              })),
+            };
+            
+            await printBluetoothKOT(kotData);
+            console.log("KOT printed via Bluetooth");
+          } catch (err) {
+            console.error("Bluetooth print error:", err);
+            // Fallback to server printing
+            api.post(`/kots/${kotId}/print`).catch((e: unknown) => {
+              console.error("Print error:", e);
+            });
+          }
+        } else {
+          // Fallback to server-side printing
+          api
+            .post(`/kots/${kotId}/print`)
+            .then(() => {
+              console.log("KOT sent to printer");
+            })
+            .catch((err: unknown) => {
+              console.error("Print error:", err);
+            });
+        }
 
         // Show KOT preview
         setCurrentOrder(order);
@@ -301,10 +338,37 @@ export default function CreateOrderPage() {
     try {
       const invoiceId = currentInvoice.id || currentInvoice._id;
 
-      await api.post(`/invoices/${invoiceId}/print`);
+      // Check if Bluetooth printer is available on mobile
+      if (isPrinterSupported) {
+        // Format invoice data for Bluetooth printer
+        const invoiceData = {
+          outletName: currentOutlet?.businessName || "Restaurant",
+          outletAddress: currentOutlet?.fullAddress || 
+                         `${currentOutlet?.address?.street}, ${currentOutlet?.address?.city}`,
+          outletPhone: currentOutlet?.contact?.phone,
+          invoiceNumber: currentInvoice.invoiceNumber || invoiceId,
+          date: new Date(currentInvoice.createdAt || Date.now()).toLocaleString(),
+          items: currentInvoice.items?.map((item: any) => ({
+            name: item.item?.name || item.name || "Item",
+            quantity: item.quantity || 1,
+            price: item.price || 0,
+            total: item.total || (item.quantity * item.price) || 0,
+          })) || [],
+          subtotal: currentInvoice.subtotal || 0,
+          tax: currentInvoice.tax || 0,
+          discount: currentInvoice.discount || 0,
+          total: currentInvoice.totalAmount || currentInvoice.total || 0,
+          paymentMethod: currentInvoice.paymentMethod || "Cash",
+          customerName: currentInvoice.customer?.name || customerName,
+        };
 
+        await printBluetoothInvoice(invoiceData);
+        return;
+      }
+
+      // Fallback to server-side printing
+      await api.post(`/invoices/${invoiceId}/print`);
       toast.success("Invoice sent to printer!");
-      // Don't close preview or navigate - let user close manually
     } catch (error) {
       console.error("Print error:", error);
       toast.warning("Invoice printing failed. Check printer connection.");
@@ -585,6 +649,21 @@ export default function CreateOrderPage() {
       {/* Floating Action Buttons - Right Bottom */}
       {cart.length > 0 && (
         <div className="fixed bottom-32 right-4 flex flex-col gap-3 z-50">
+          {/* Bluetooth Printer Button - Show only on mobile */}
+          {isPrinterSupported && (
+            <button
+              onClick={connectPrinter}
+              className={`w-14 h-14 rounded-full shadow-2xl border-2 flex items-center justify-center transition-all ${
+                isPrinterConnected
+                  ? "bg-green-600 text-white border-green-600 animate-pulse"
+                  : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"
+              }`}
+              title={isPrinterConnected ? "Printer Connected" : "Connect Bluetooth Printer"}
+            >
+              <Bluetooth className="h-6 w-6" />
+            </button>
+          )}
+          
           {/* Customer Details Button */}
           <button
             onClick={() => {

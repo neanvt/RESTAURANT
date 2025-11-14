@@ -2,6 +2,7 @@
 
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { getFullImageUrl } from "@/lib/imageUtils";
 
 interface InvoicePreviewProps {
   order: any;
@@ -51,10 +52,10 @@ export default function InvoicePreview({
         <div className="flex-1 overflow-y-auto p-6 bg-gray-50">
           <div className="bg-white p-6 rounded-lg shadow-sm">
             {/* Outlet Logo & Info */}
-            {outlet?.logo && (
+            {outlet?.logo && getFullImageUrl(outlet.logo) && (
               <div className="flex justify-center mb-4">
                 <img
-                  src={`${process.env.NEXT_PUBLIC_API_URL}${outlet.logo}`}
+                  src={getFullImageUrl(outlet.logo)!}
                   alt={outlet.businessName}
                   className="h-16 object-contain"
                 />
