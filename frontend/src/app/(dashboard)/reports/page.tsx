@@ -85,7 +85,7 @@ export default function ReportsPage() {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 pb-20">
       {/* Header */}
       <div className="bg-white border-b sticky top-0 z-10">
         <div className="px-4 py-3">
@@ -118,7 +118,7 @@ export default function ReportsPage() {
         </div>
       </div>
 
-      <div className="p-4 space-y-4">
+      <div className="p-4 space-y-4 pb-24">
         {/* Today's Overview */}
         <div>
           <h2 className="text-lg font-semibold text-gray-900 mb-3">
