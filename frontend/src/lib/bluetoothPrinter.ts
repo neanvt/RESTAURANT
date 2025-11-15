@@ -140,7 +140,7 @@ class BluetoothPrinterService {
       const devices = await navigator.bluetooth.getDevices();
       const device = devices.find((d: any) => d.id === saved.id);
       
-      if (!device) {
+      if (!device || !device.gatt) {
         this.clearSavedDevice();
         return false;
       }
