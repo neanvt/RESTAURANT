@@ -1,7 +1,11 @@
 import { Request, Response } from "express";
 import itemService from "../services/itemService";
 import logger from "../utils/logger";
-import { cloudinaryUpload, uploadAndOptimizeToCloudinary, deleteFromCloudinary } from "../middleware/cloudinaryUpload";
+import {
+  cloudinaryUpload,
+  uploadAndOptimizeToCloudinary,
+  deleteFromCloudinary,
+} from "../middleware/cloudinaryUpload";
 
 /**
  * Get all items with filters

@@ -1,6 +1,8 @@
 import { create } from "zustand";
 import { Item, CreateItemDTO, UpdateItemDTO, ItemFilters } from "@/types/item";
 import { itemsApi } from "@/lib/api/items";
+import { cacheItems, getCachedItems } from "@/lib/db";
+import { cacheDataForOffline } from "@/lib/pwa";
 
 interface ItemState {
   items: Item[];
@@ -44,11 +46,22 @@ export const useItemStore = create<ItemState>((set, get) => ({
     try {
       const items = await itemsApi.getAll(filters || get().filters);
       set({ items, isLoading: false });
+      
+      // Cache items for offline use
+      await cacheItems(items);
+      await cacheDataForOffline('items', items);
     } catch (error: any) {
-      set({
-        error: error.response?.data?.error?.message || "Failed to fetch items",
-        isLoading: false,
-      });
+      // Try to load from cache if offline
+      const cachedItems = await getCachedItems();
+      if (cachedItems.length > 0) {
+        set({ items: cachedItems, isLoading: false });
+        console.log('📦 Loaded items from cache (offline)');
+      } else {
+        set({
+          error: error.response?.data?.error?.message || "Failed to fetch items",
+          isLoading: false,
+        });
+      }
     }
   },
 

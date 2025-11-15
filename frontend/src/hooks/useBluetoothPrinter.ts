@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { bluetoothPrinter } from "@/lib/bluetoothPrinter";
 import { toast } from "sonner";
 
@@ -8,6 +8,20 @@ export function useBluetoothPrinter() {
   const [isConnected, setIsConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
+
+  // Auto-reconnect on mount
+  useEffect(() => {
+    const tryAutoReconnect = async () => {
+      if (bluetoothPrinter.isSupported() && !bluetoothPrinter.isConnected()) {
+        const reconnected = await bluetoothPrinter.autoReconnect();
+        if (reconnected) {
+          setIsConnected(true);
+          console.log("✅ Printer auto-reconnected");
+        }
+      }
+    };
+    tryAutoReconnect();
+  }, []);
 
   /**
    * Check if Bluetooth printing is supported
@@ -21,7 +35,9 @@ export function useBluetoothPrinter() {
    */
   const connect = useCallback(async () => {
     if (!bluetoothPrinter.isSupported()) {
-      toast.error("Bluetooth printing is not supported on this device. Please use Chrome on Android.");
+      toast.error(
+        "Bluetooth printing is not supported on this device. Please use Chrome on Android."
+      );
       return false;
     }
 
@@ -33,15 +49,19 @@ export function useBluetoothPrinter() {
       return true;
     } catch (error: any) {
       console.error("Printer connection failed:", error);
-      
-      if (error.name === 'NotFoundError') {
-        toast.error("No printer found. Make sure your Bluetooth printer is on and in pairing mode.");
-      } else if (error.name === 'SecurityError') {
-        toast.error("Bluetooth access denied. Please allow Bluetooth permissions.");
+
+      if (error.name === "NotFoundError") {
+        toast.error(
+          "No printer found. Make sure your Bluetooth printer is on and in pairing mode."
+        );
+      } else if (error.name === "SecurityError") {
+        toast.error(
+          "Bluetooth access denied. Please allow Bluetooth permissions."
+        );
       } else {
         toast.error(`Failed to connect to printer: ${error.message}`);
       }
-      
+
       setIsConnected(false);
       return false;
     } finally {
@@ -88,46 +108,52 @@ export function useBluetoothPrinter() {
   /**
    * Print invoice
    */
-  const printInvoice = useCallback(async (invoice: any) => {
-    if (!bluetoothPrinter.isConnected()) {
-      toast.warning("Connecting to printer...");
-      const connected = await connect();
-      if (!connected) return;
-    }
+  const printInvoice = useCallback(
+    async (invoice: any) => {
+      if (!bluetoothPrinter.isConnected()) {
+        toast.warning("Connecting to printer...");
+        const connected = await connect();
+        if (!connected) return;
+      }
 
-    setIsPrinting(true);
-    try {
-      await bluetoothPrinter.printInvoice(invoice);
-      toast.success("Invoice printed successfully!");
-    } catch (error: any) {
-      console.error("Print invoice failed:", error);
-      toast.error(`Print failed: ${error.message}`);
-    } finally {
-      setIsPrinting(false);
-    }
-  }, [connect]);
+      setIsPrinting(true);
+      try {
+        await bluetoothPrinter.printInvoice(invoice);
+        toast.success("Invoice printed successfully!");
+      } catch (error: any) {
+        console.error("Print invoice failed:", error);
+        toast.error(`Print failed: ${error.message}`);
+      } finally {
+        setIsPrinting(false);
+      }
+    },
+    [connect]
+  );
 
   /**
    * Print KOT (Kitchen Order Ticket)
    */
-  const printKOT = useCallback(async (kot: any) => {
-    if (!bluetoothPrinter.isConnected()) {
-      toast.warning("Connecting to printer...");
-      const connected = await connect();
-      if (!connected) return;
-    }
+  const printKOT = useCallback(
+    async (kot: any) => {
+      if (!bluetoothPrinter.isConnected()) {
+        toast.warning("Connecting to printer...");
+        const connected = await connect();
+        if (!connected) return;
+      }
 
-    setIsPrinting(true);
-    try {
-      await bluetoothPrinter.printKOT(kot);
-      toast.success("KOT sent to kitchen!");
-    } catch (error: any) {
-      console.error("Print KOT failed:", error);
-      toast.error(`Print failed: ${error.message}`);
-    } finally {
-      setIsPrinting(false);
-    }
-  }, [connect]);
+      setIsPrinting(true);
+      try {
+        await bluetoothPrinter.printKOT(kot);
+        toast.success("KOT sent to kitchen!");
+      } catch (error: any) {
+        console.error("Print KOT failed:", error);
+        toast.error(`Print failed: ${error.message}`);
+      } finally {
+        setIsPrinting(false);
+      }
+    },
+    [connect]
+  );
 
   return {
     isSupported: isSupported(),

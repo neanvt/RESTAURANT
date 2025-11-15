@@ -64,7 +64,9 @@ export async function uploadToCloudinary(
             console.error("❌ Cloudinary upload error:", error);
             reject(error);
           } else if (result) {
-            console.log(`✅ Image uploaded to Cloudinary: ${result.secure_url}`);
+            console.log(
+              `✅ Image uploaded to Cloudinary: ${result.secure_url}`
+            );
             resolve(result.secure_url);
           } else {
             reject(new Error("Upload failed - no result"));

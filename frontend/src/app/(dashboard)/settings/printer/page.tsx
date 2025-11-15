@@ -1,17 +1,23 @@
 "use client";
 
 import { useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useBluetoothPrinter } from "@/hooks/useBluetoothPrinter";
-import { 
-  Bluetooth, 
-  BluetoothConnected, 
-  Printer, 
-  TestTube, 
-  CheckCircle2, 
+import {
+  Bluetooth,
+  BluetoothConnected,
+  Printer,
+  TestTube,
+  CheckCircle2,
   XCircle,
   Loader2,
   AlertCircle,
@@ -34,7 +40,7 @@ export default function PrinterSettingsPage() {
     // Check if running on mobile
     const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
     const isChrome = /Chrome/.test(navigator.userAgent);
-    
+
     if (!isMobile) {
       console.warn("Bluetooth printing works best on mobile devices");
     }
@@ -65,7 +71,8 @@ export default function PrinterSettingsPage() {
                 </h3>
                 <p className="text-sm text-yellow-800 mt-1">
                   Web Bluetooth is not available on this device. Please use{" "}
-                  <strong>Chrome browser on Android</strong> to enable Bluetooth printing.
+                  <strong>Chrome browser on Android</strong> to enable Bluetooth
+                  printing.
                 </p>
                 <div className="flex gap-2 mt-3">
                   <Smartphone className="h-4 w-4 text-yellow-700" />
@@ -107,7 +114,7 @@ export default function PrinterSettingsPage() {
                 </Badge>
               )}
             </div>
-            
+
             {isConnected && (
               <BluetoothConnected className="h-5 w-5 text-blue-500 animate-pulse" />
             )}
@@ -185,7 +192,8 @@ export default function PrinterSettingsPage() {
               <div>
                 <strong>Power on your printer</strong>
                 <p className="text-gray-600 mt-0.5">
-                  Turn on your Bluetooth thermal printer (e.g., Shreyans SC588, RPP02N, etc.)
+                  Turn on your Bluetooth thermal printer (e.g., Shreyans SC588,
+                  RPP02N, etc.)
                 </p>
               </div>
             </li>
@@ -197,7 +205,8 @@ export default function PrinterSettingsPage() {
               <div>
                 <strong>Enable pairing mode</strong>
                 <p className="text-gray-600 mt-0.5">
-                  Make sure your printer is in Bluetooth pairing mode (usually indicated by a blinking LED)
+                  Make sure your printer is in Bluetooth pairing mode (usually
+                  indicated by a blinking LED)
                 </p>
               </div>
             </li>
@@ -279,8 +288,8 @@ export default function PrinterSettingsPage() {
 
           <div className="mt-4 p-4 bg-blue-50 rounded-lg">
             <p className="text-sm text-blue-800">
-              <strong>Note:</strong> Most 58mm Bluetooth thermal printers that support ESC/POS commands
-              should work with this system.
+              <strong>Note:</strong> Most 58mm Bluetooth thermal printers that
+              support ESC/POS commands should work with this system.
             </p>
           </div>
         </CardContent>
@@ -310,7 +319,10 @@ export default function PrinterSettingsPage() {
               <ul className="list-disc list-inside text-gray-600 mt-1 space-y-1 ml-2">
                 <li>Grant Bluetooth permissions when Chrome asks</li>
                 <li>Move closer to the printer (within 10 meters)</li>
-                <li>Unpair the printer from Android Bluetooth settings and try again</li>
+                <li>
+                  Unpair the printer from Android Bluetooth settings and try
+                  again
+                </li>
               </ul>
             </div>
 

@@ -6,6 +6,8 @@ import {
   OrderFilters,
 } from "@/types/order";
 import { ordersApi } from "@/lib/api/orders";
+import { saveOrderOffline, isOnline } from "@/lib/db";
+import { toast } from "sonner";
 
 interface OrderState {
   orders: Order[];
@@ -78,6 +80,28 @@ export const useOrderStore = create<OrderState>((set, get) => ({
       }));
       return newOrder;
     } catch (error: any) {
+      // If offline, save to local database
+      if (!isOnline()) {
+        const offlineOrder = {
+          ...data,
+          id: `offline_${Date.now()}`,
+          createdAt: new Date().toISOString(),
+          status: 'pending',
+          isOffline: true,
+        } as any;
+        
+        await saveOrderOffline(offlineOrder);
+        
+        set((state) => ({
+          orders: [offlineOrder, ...state.orders],
+          currentOrder: offlineOrder,
+          isLoading: false,
+        }));
+        
+        toast.info('Order saved offline. Will sync when online.');
+        return offlineOrder;
+      }
+      
       set({
         error: error.response?.data?.error?.message || "Failed to create order",
         isLoading: false,

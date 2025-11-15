@@ -1,6 +1,9 @@
 import { Request, Response, NextFunction } from "express";
 import outletService from "../services/outletService";
-import { uploadAndOptimizeToCloudinary, deleteFromCloudinary } from "../middleware/cloudinaryUpload";
+import {
+  uploadAndOptimizeToCloudinary,
+  deleteFromCloudinary,
+} from "../middleware/cloudinaryUpload";
 import { IOutlet } from "../models/Outlet";
 
 /**

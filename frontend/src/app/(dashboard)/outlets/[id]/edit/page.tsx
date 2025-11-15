@@ -300,11 +300,7 @@ export default function EditOutletPage() {
                 >
                   <img
                     ref={imgRef}
-                    src={
-                      logoPreview ||
-                      getFullImageUrl(currentLogo) ||
-                      ""
-                    }
+                    src={logoPreview || getFullImageUrl(currentLogo) || ""}
                     alt="Logo preview"
                     className={
                       logoMode === "fit"
@@ -333,9 +329,7 @@ export default function EditOutletPage() {
                       onClick={async () => {
                         try {
                           const src =
-                            logoPreview ||
-                            getFullImageUrl(currentLogo) ||
-                            "";
+                            logoPreview || getFullImageUrl(currentLogo) || "";
                           const cropped = await cropImageToSize(src, 512, 256);
                           setLogoPreview(cropped.preview);
                           setLogoFile(cropped.file);

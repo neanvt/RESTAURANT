@@ -239,9 +239,7 @@ export default function BusinessSettingsPage() {
 
   const displayLogo =
     logoPreview ||
-    (currentOutlet.logo
-      ? getFullImageUrl(currentOutlet.logo)
-      : null);
+    (currentOutlet.logo ? getFullImageUrl(currentOutlet.logo) : null);
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">

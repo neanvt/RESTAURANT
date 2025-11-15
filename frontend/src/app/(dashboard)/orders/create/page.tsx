@@ -47,14 +47,14 @@ export default function CreateOrderPage() {
   const { createOrder, generateKOT, holdOrder } = useOrderStore();
   const { categories, fetchCategories } = useCategoryStore();
   const { currentOutlet, fetchCurrentOutlet } = useOutletStore();
-  
+
   // Bluetooth printer hook
-  const { 
+  const {
     isSupported: isPrinterSupported,
     isConnected: isPrinterConnected,
     printInvoice: printBluetoothInvoice,
     printKOT: printBluetoothKOT,
-    connect: connectPrinter 
+    connect: connectPrinter,
   } = useBluetoothPrinter();
 
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -83,23 +83,7 @@ export default function CreateOrderPage() {
       await fetchCurrentOutlet();
     };
     loadData();
-    
-    // Check for Bluetooth printer on page load (mobile only)
-    if (isPrinterSupported && !isPrinterConnected) {
-      // Show a subtle reminder to connect printer
-      const timer = setTimeout(() => {
-        toast.info("Tip: Connect Bluetooth printer for direct printing", {
-          duration: 5000,
-          action: {
-            label: "Connect",
-            onClick: () => connectPrinter(),
-          },
-        });
-      }, 2000); // Show after 2 seconds
-      
-      return () => clearTimeout(timer);
-    }
-  }, [isPrinterSupported, isPrinterConnected]);
+  }, []);
 
   const handleCategorySelect = (categoryId: string | null) => {
     setShowFavourite(false);
@@ -224,8 +208,15 @@ export default function CreateOrderPage() {
 
         // Format date for printing
         const now = new Date();
-        const formattedDate = `${now.getDate().toString().padStart(2, '0')}/${(now.getMonth() + 1).toString().padStart(2, '0')}/${now.getFullYear()} ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
-        
+        const formattedDate = `${now.getDate().toString().padStart(2, "0")}/${(
+          now.getMonth() + 1
+        )
+          .toString()
+          .padStart(2, "0")}/${now.getFullYear()} ${now
+          .getHours()
+          .toString()
+          .padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}`;
+
         // Prepare KOT data
         const kotData = {
           outletName: currentOutlet?.businessName || "Restaurant",
@@ -238,7 +229,7 @@ export default function CreateOrderPage() {
             notes: item.notes,
           })),
         };
-        
+
         // Try Bluetooth printing first if supported and connected
         if (isPrinterSupported && isPrinterConnected) {
           try {
@@ -365,22 +356,35 @@ export default function CreateOrderPage() {
       if (isPrinterSupported) {
         // Format date for printing
         const invoiceDate = new Date(currentInvoice.createdAt || Date.now());
-        const formattedDate = `${invoiceDate.getDate().toString().padStart(2, '0')}/${(invoiceDate.getMonth() + 1).toString().padStart(2, '0')}/${invoiceDate.getFullYear()} ${invoiceDate.getHours().toString().padStart(2, '0')}:${invoiceDate.getMinutes().toString().padStart(2, '0')}`;
-        
+        const formattedDate = `${invoiceDate
+          .getDate()
+          .toString()
+          .padStart(2, "0")}/${(invoiceDate.getMonth() + 1)
+          .toString()
+          .padStart(2, "0")}/${invoiceDate.getFullYear()} ${invoiceDate
+          .getHours()
+          .toString()
+          .padStart(2, "0")}:${invoiceDate
+          .getMinutes()
+          .toString()
+          .padStart(2, "0")}`;
+
         // Format invoice data for Bluetooth printer
         const invoiceData = {
           outletName: currentOutlet?.businessName || "Restaurant",
-          outletAddress: currentOutlet?.fullAddress || 
-                         `${currentOutlet?.address?.street}, ${currentOutlet?.address?.city}`,
+          outletAddress:
+            currentOutlet?.fullAddress ||
+            `${currentOutlet?.address?.street}, ${currentOutlet?.address?.city}`,
           outletPhone: currentOutlet?.contact?.phone,
           invoiceNumber: currentInvoice.invoiceNumber || invoiceId,
           date: formattedDate,
-          items: currentInvoice.items?.map((item: any) => ({
-            name: item.item?.name || item.name || "Item",
-            quantity: item.quantity || 1,
-            price: item.price || 0,
-            total: item.total || (item.quantity * item.price) || 0,
-          })) || [],
+          items:
+            currentInvoice.items?.map((item: any) => ({
+              name: item.item?.name || item.name || "Item",
+              quantity: item.quantity || 1,
+              price: item.price || 0,
+              total: item.total || item.quantity * item.price || 0,
+            })) || [],
           subtotal: currentInvoice.subtotal || 0,
           tax: currentInvoice.tax || 0,
           discount: currentInvoice.discount || 0,
@@ -685,12 +689,16 @@ export default function CreateOrderPage() {
                   ? "bg-green-600 text-white border-green-600 animate-pulse"
                   : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"
               }`}
-              title={isPrinterConnected ? "Printer Connected" : "Connect Bluetooth Printer"}
+              title={
+                isPrinterConnected
+                  ? "Printer Connected"
+                  : "Connect Bluetooth Printer"
+              }
             >
               <Bluetooth className="h-6 w-6" />
             </button>
           )}
-          
+
           {/* Customer Details Button */}
           <button
             onClick={() => {

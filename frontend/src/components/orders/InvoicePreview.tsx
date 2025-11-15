@@ -57,7 +57,7 @@ export default function InvoicePreview({
                 <img
                   src={getFullImageUrl(outlet.logo)!}
                   alt={outlet.businessName}
-                  className="h-16 object-contain"
+                  className="max-w-[200px] max-h-24 object-contain"
                 />
               </div>
             )}

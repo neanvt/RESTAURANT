@@ -47,7 +47,7 @@ export async function uploadToFirebase(
     }
 
     const bucket = admin.storage().bucket();
-    
+
     // Generate unique filename
     const timestamp = Date.now();
     const random = Math.floor(Math.random() * 1000000000);
@@ -73,7 +73,7 @@ export async function uploadToFirebase(
     // Return public URL
     const publicUrl = `https://storage.googleapis.com/${bucket.name}/${filename}`;
     console.log(`✅ File uploaded to Firebase Storage: ${publicUrl}`);
-    
+
     return publicUrl;
   } catch (error) {
     console.error("❌ Failed to upload to Firebase Storage:", error);
@@ -89,16 +89,16 @@ export async function deleteFromFirebase(fileUrl: string): Promise<void> {
     }
 
     const bucket = admin.storage().bucket();
-    
+
     // Extract filename from URL
     const urlParts = fileUrl.split(`${bucket.name}/`);
     if (urlParts.length < 2) {
       console.warn("⚠️  Invalid Firebase Storage URL:", fileUrl);
       return;
     }
-    
+
     const filename = urlParts[1];
-    
+
     // Delete the file
     await bucket.file(filename).delete();
     console.log(`✅ File deleted from Firebase Storage: ${filename}`);
