@@ -58,6 +58,7 @@ export interface IOutlet extends Document {
     serviceChargeRate: number;
     kotPrinterEnabled: boolean;
     billPrinterEnabled: boolean;
+    financialYearStart?: string; // Format: "YY-YY" e.g. "25-26" for 2025-2026
   };
   isActive: boolean;
   createdAt: Date;
@@ -274,6 +275,11 @@ const OutletSchema: Schema = new Schema(
       billPrinterEnabled: {
         type: Boolean,
         default: false,
+      },
+      financialYearStart: {
+        type: String,
+        default: "25-26", // Default to 2025-2026
+        trim: true,
       },
     },
     isActive: {

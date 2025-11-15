@@ -14,8 +14,10 @@ const generateInvoiceNumber = async (outletId: string): Promise<string> => {
   const counterId = `invoice_${outletId}_${dateStr}`;
 
   try {
-    console.log(`🔄 Generating invoice number for outlet ${outletId} on ${dateStr}`);
-    
+    console.log(
+      `🔄 Generating invoice number for outlet ${outletId} on ${dateStr}`
+    );
+
     // Use findOneAndUpdate with upsert to atomically increment the counter
     const counter = await Counter.findOneAndUpdate(
       { _id: counterId },
