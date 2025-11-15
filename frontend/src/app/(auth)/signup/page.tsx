@@ -137,6 +137,19 @@ export default function SignupPage() {
             </div>
           )}
 
+          <div className="pt-2 text-center">
+            <p className="text-sm text-gray-600 mb-2">
+              Already have an account?
+            </p>
+            <Button
+              variant="ghost"
+              className="w-full"
+              onClick={() => router.push("/login")}
+            >
+              Sign In
+            </Button>
+          </div>
+
           <div className="text-center text-sm text-gray-600">
             By signing up you agree to our Terms of Service
           </div>

@@ -67,13 +67,21 @@ export default function InstallPWA() {
     window.addEventListener("beforeinstallprompt", handler);
 
     // Show banner after 5 seconds for all non-installed cases
-    setTimeout(() => {
+    const showTimer = setTimeout(() => {
       console.log("Showing install banner");
       setShowInstallBanner(true);
     }, 5000);
 
+    // Auto-hide banner after 10 seconds of it being shown (15 seconds total from page load)
+    const hideTimer = setTimeout(() => {
+      console.log("Auto-hiding install banner after 10 seconds");
+      setShowInstallBanner(false);
+    }, 15000);
+
     return () => {
       window.removeEventListener("beforeinstallprompt", handler);
+      clearTimeout(showTimer);
+      clearTimeout(hideTimer);
     };
   }, []);
 

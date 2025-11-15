@@ -193,13 +193,16 @@ export default function LoginPage() {
             )}
           </div>
 
-          <div className="pt-2">
+          <div className="pt-2 text-center">
+            <p className="text-sm text-gray-600 mb-2">
+              Don&apos;t have an account?
+            </p>
             <Button
               variant="ghost"
               className="w-full"
               onClick={() => router.push("/signup")}
             >
-              Sign up instead
+              Create Account
             </Button>
           </div>
 
