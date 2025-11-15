@@ -4,6 +4,8 @@ const withPWA = require("next-pwa")({
   skipWaiting: true,
   disable: false, // Enable in development for testing
   sw: 'sw.js', // Use sw.js instead of service-worker.js
+  buildExcludes: [/middleware-manifest\.json$/],
+  publicExcludes: ['!robots.txt', '!sitemap.xml'],
   runtimeCaching: [
     {
       urlPattern: /^https:\/\/fonts\.(?:gstatic)\.com\/.*/i,

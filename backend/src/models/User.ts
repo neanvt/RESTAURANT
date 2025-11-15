@@ -30,7 +30,6 @@ const UserSchema: Schema = new Schema(
         },
         message: "Please provide a valid 10-digit Indian phone number",
       },
-      index: true,
     },
     name: {
       type: String,
@@ -108,7 +107,7 @@ const UserSchema: Schema = new Schema(
 );
 
 // Indexes for better query performance
-UserSchema.index({ phone: 1 });
+// Note: phone already has unique index from schema definition
 UserSchema.index({ outlets: 1 });
 UserSchema.index({ isActive: 1 });
 

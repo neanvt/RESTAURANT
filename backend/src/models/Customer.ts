@@ -41,7 +41,6 @@ const customerSchema = new Schema<ICustomer>(
       type: Schema.Types.ObjectId,
       ref: "Outlet",
       required: true,
-      index: true,
     },
     name: {
       type: String,
