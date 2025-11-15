@@ -15,20 +15,26 @@ const generateOrderNumber = async (outletId: string): Promise<string> => {
   const dateStr = today.toISOString().split("T")[0]; // YYYY-MM-DD
   const counterId = `order_${outletId}_${dateStr}`;
 
-  // Use findOneAndUpdate with upsert to atomically increment the counter
-  const counter = await Counter.findOneAndUpdate(
-    { _id: counterId },
-    {
-      $inc: { sequence: 1 },
-      $setOnInsert: { date: today },
-    },
-    {
-      upsert: true,
-      new: true,
-    }
-  );
+  try {
+    // Use findOneAndUpdate with upsert to atomically increment the counter
+    const counter = await Counter.findOneAndUpdate(
+      { _id: counterId },
+      {
+        $inc: { sequence: 1 },
+        $setOnInsert: { date: today },
+      },
+      {
+        upsert: true,
+        new: true,
+      }
+    );
 
-  return counter.sequence.toString();
+    console.log(`✅ Generated order number: ${counter.sequence} for outlet ${outletId} on ${dateStr}`);
+    return counter.sequence.toString();
+  } catch (error: any) {
+    console.error(`❌ Error generating order number:`, error);
+    throw error;
+  }
 };
 
 // Generate KOT number - uses atomic counter to prevent race conditions
@@ -181,23 +187,54 @@ export const createOrder = async (
       total,
     } = calculateOrderTotals(orderItems);
 
-    // Generate order number
-    const orderNumber = await generateOrderNumber(outletId.toString());
+    // Generate order number and create order with retry logic for duplicate key errors
+    let order;
+    let orderNumber: string = "";
+    let retries = 3;
+    let lastError;
 
-    // Create order
-    const order = await Order.create({
-      outletId,
-      orderNumber,
-      items: calculatedItems,
-      subtotal,
-      taxAmount,
-      total,
-      status: "draft",
-      customer,
-      tableNumber,
-      notes,
-      createdBy: req.user!.userId,
-    });
+    while (retries > 0) {
+      try {
+        orderNumber = await generateOrderNumber(outletId.toString());
+
+        order = await Order.create({
+          outletId,
+          orderNumber,
+          items: calculatedItems,
+          subtotal,
+          taxAmount,
+          total,
+          status: "draft",
+          customer,
+          tableNumber,
+          notes,
+          createdBy: req.user!.userId,
+        });
+
+        break; // Success, exit loop
+      } catch (error: any) {
+        lastError = error;
+        
+        // Check if it's a duplicate key error
+        if (error.code === 11000 && error.message.includes("orderNumber")) {
+          retries--;
+          console.log(`Duplicate order number detected, retrying... (${retries} attempts left)`);
+          
+          if (retries > 0) {
+            // Wait a bit before retrying (exponential backoff)
+            await new Promise(resolve => setTimeout(resolve, 100 * (4 - retries)));
+            continue;
+          }
+        }
+        
+        // If not a duplicate error or out of retries, throw
+        throw error;
+      }
+    }
+
+    if (!order) {
+      throw lastError || new Error("Failed to create order after retries");
+    }
 
     // Log activity
     await staffService.logActivity({

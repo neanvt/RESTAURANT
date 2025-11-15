@@ -153,7 +153,8 @@ export default function InstallPWA() {
                     <div className="text-center text-sm text-blue-100">
                       <p className="mb-2">To install this app:</p>
                       <p className="text-xs">
-                        Tap your browser&apos;s menu and select &quot;Install app&quot; or &quot;Add to Home screen&quot;
+                        Tap your browser&apos;s menu and select &quot;Install
+                        app&quot; or &quot;Add to Home screen&quot;
                       </p>
                     </div>
                   )}
