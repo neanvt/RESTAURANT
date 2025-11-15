@@ -548,46 +548,102 @@ export const generateKOT = async (
       return;
     }
 
-    // Generate KOT number
-    const kotNumber = await generateKOTNumber(outletId.toString());
+    // Generate KOT number and create KOT with retry logic
+    let kot;
+    let kotNumber: string = "";
+    let kotRetries = 3;
+    let lastKotError;
 
-    // Create KOT
-    const kot = await KOT.create({
-      outletId,
-      orderId: order._id,
-      kotNumber,
-      items: order.items.map((item) => ({
-        item: item.item,
-        name: item.name,
-        quantity: item.quantity,
-        notes: item.notes,
-        status: "pending",
-      })),
-      status: "pending",
-      tableNumber: order.tableNumber,
-      notes: order.notes,
-      createdBy: req.user!.userId,
-    });
+    while (kotRetries > 0) {
+      try {
+        kotNumber = await generateKOTNumber(outletId.toString());
 
-    // Generate Invoice number
-    const invoiceNumber = await generateInvoiceNumber(outletId.toString());
+        kot = await KOT.create({
+          outletId,
+          orderId: order._id,
+          kotNumber,
+          items: order.items.map((item) => ({
+            item: item.item,
+            name: item.name,
+            quantity: item.quantity,
+            notes: item.notes,
+            status: "pending",
+          })),
+          status: "pending",
+          tableNumber: order.tableNumber,
+          notes: order.notes,
+          createdBy: req.user!.userId,
+        });
 
-    // Create Invoice
-    const invoice = await Invoice.create({
-      outletId,
-      orderId: order._id,
-      invoiceNumber,
-      items: order.items,
-      subtotal: order.subtotal,
-      taxAmount: order.taxAmount,
-      total: order.total,
-      customer: order.customer,
-      paymentMethod: "cash", // Default payment method
-      paymentStatus: "pending",
-      paidAmount: 0,
-      notes: order.notes,
-      createdBy: req.user!.userId,
-    });
+        break; // Success
+      } catch (error: any) {
+        lastKotError = error;
+        
+        if (error.code === 11000 && error.message.includes("kotNumber")) {
+          kotRetries--;
+          console.log(`Duplicate KOT number, retrying... (${kotRetries} left)`);
+          
+          if (kotRetries > 0) {
+            await new Promise(resolve => setTimeout(resolve, 100 * (4 - kotRetries)));
+            continue;
+          }
+        }
+        
+        throw error;
+      }
+    }
+
+    if (!kot) {
+      throw lastKotError || new Error("Failed to create KOT after retries");
+    }
+
+    // Generate Invoice number and create invoice with retry logic
+    let invoice;
+    let invoiceNumber: string = "";
+    let invoiceRetries = 3;
+    let lastInvoiceError;
+
+    while (invoiceRetries > 0) {
+      try {
+        invoiceNumber = await generateInvoiceNumber(outletId.toString());
+
+        invoice = await Invoice.create({
+          outletId,
+          orderId: order._id,
+          invoiceNumber,
+          items: order.items,
+          subtotal: order.subtotal,
+          taxAmount: order.taxAmount,
+          total: order.total,
+          customer: order.customer,
+          paymentMethod: "cash", // Default payment method
+          paymentStatus: "pending",
+          paidAmount: 0,
+          notes: order.notes,
+          createdBy: req.user!.userId,
+        });
+
+        break; // Success
+      } catch (error: any) {
+        lastInvoiceError = error;
+        
+        if (error.code === 11000 && error.message.includes("invoiceNumber")) {
+          invoiceRetries--;
+          console.log(`Duplicate invoice number, retrying... (${invoiceRetries} left)`);
+          
+          if (invoiceRetries > 0) {
+            await new Promise(resolve => setTimeout(resolve, 100 * (4 - invoiceRetries)));
+            continue;
+          }
+        }
+        
+        throw error;
+      }
+    }
+
+    if (!invoice) {
+      throw lastInvoiceError || new Error("Failed to create invoice after retries");
+    }
 
     // Update order status to completed
     order.status = "completed";
@@ -610,9 +666,21 @@ export const generateKOT = async (
       data: { order, kot, invoice },
     });
   } catch (error: any) {
+    console.error("❌ KOT generation error:", error);
+    console.error("Error details:", {
+      name: error.name,
+      message: error.message,
+      code: error.code,
+      stack: error.stack,
+    });
+    
     res.status(500).json({
       success: false,
-      error: { message: error.message || "Failed to generate KOT" },
+      error: { 
+        message: error.message || "Failed to generate KOT",
+        code: error.code,
+        details: process.env.NODE_ENV === "development" ? error.stack : undefined,
+      },
     });
   }
 };
