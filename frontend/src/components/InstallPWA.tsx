@@ -25,14 +25,19 @@ export default function InstallPWA() {
     // Check if already installed (standalone mode)
     const standalone =
       window.matchMedia("(display-mode: standalone)").matches ||
-      (window.navigator as any).standalone;
+      (window.navigator as any).standalone === true;
     setIsStandalone(standalone);
 
-    console.log('PWA Install Status:', { iOS, standalone, canInstall: !standalone });
+    console.log("PWA Install Status:", {
+      iOS,
+      standalone,
+      canInstall: !standalone,
+      userAgent: navigator.userAgent.substring(0, 50),
+    });
 
     // Don't show banner if already installed
     if (standalone) {
-      console.log('App already installed in standalone mode');
+      console.log("App already installed in standalone mode");
       return;
     }
 
@@ -45,20 +50,22 @@ export default function InstallPWA() {
 
       // Show again after 7 days
       if (daysSinceDismissal < 7) {
-        console.log(`Install prompt dismissed ${daysSinceDismissal.toFixed(1)} days ago`);
+        console.log(
+          `Install prompt dismissed ${daysSinceDismissal.toFixed(1)} days ago`
+        );
         return;
       }
     }
 
     // Listen for beforeinstallprompt event (Android/Chrome)
     const handler = (e: Event) => {
-      console.log('beforeinstallprompt event fired');
+      console.log("beforeinstallprompt event fired");
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
 
       // Show banner after 5 seconds (reduced from 30s for testing)
       setTimeout(() => {
-        console.log('Showing install banner');
+        console.log("Showing install banner");
         setShowInstallBanner(true);
       }, 5000);
     };
@@ -67,7 +74,7 @@ export default function InstallPWA() {
 
     // For iOS, show banner after delay if not installed
     if (iOS && !standalone) {
-      console.log('iOS detected, showing install instructions after delay');
+      console.log("iOS detected, showing install instructions after delay");
       setTimeout(() => {
         setShowInstallBanner(true);
       }, 5000);
@@ -105,24 +112,23 @@ export default function InstallPWA() {
     setShowInstallBanner(true);
   };
 
-  // Show manual trigger button in development
+  // Show manual trigger button in development (always show if not installed)
   if (isStandalone) {
     return null;
   }
 
-  // Show test button if banner is hidden (for development)
-  if (!showInstallBanner && process.env.NODE_ENV === 'development') {
+  // Show test button if banner is hidden
+  if (!showInstallBanner) {
     return (
       <button
         onClick={handleShowManually}
-        className="fixed bottom-4 right-4 bg-blue-600 text-white px-4 py-2 rounded-lg shadow-lg hover:bg-blue-700 transition-colors text-sm z-50"
+        className="fixed bottom-4 right-4 bg-blue-600 text-white px-3 py-2 rounded-lg shadow-lg hover:bg-blue-700 transition-colors text-xs z-50 opacity-50 hover:opacity-100"
+        title="Show install prompt"
       >
-        Test Install Prompt
+        📱 Install
       </button>
     );
   }
-
-  if (!showInstallBanner) return null;
 
   return (
     <>
