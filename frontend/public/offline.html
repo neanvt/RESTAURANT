@@ -1,169 +1,171 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Offline - Restaurant POS</title>
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-    
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-    }
-    
-    .container {
-      background: white;
-      border-radius: 20px;
-      padding: 40px;
-      max-width: 400px;
-      text-align: center;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-    }
-    
-    .icon {
-      width: 80px;
-      height: 80px;
-      margin: 0 auto 20px;
-      background: #f0f0f0;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 40px;
-    }
-    
-    h1 {
-      color: #333;
-      margin-bottom: 15px;
-      font-size: 28px;
-    }
-    
-    p {
-      color: #666;
-      line-height: 1.6;
-      margin-bottom: 25px;
-    }
-    
-    .features {
-      background: #f8f9fa;
-      border-radius: 10px;
-      padding: 20px;
-      margin: 20px 0;
-      text-align: left;
-    }
-    
-    .features h3 {
-      color: #667eea;
-      margin-bottom: 15px;
-      font-size: 16px;
-    }
-    
-    .features ul {
-      list-style: none;
-    }
-    
-    .features li {
-      padding: 8px 0;
-      color: #555;
-      font-size: 14px;
-    }
-    
-    .features li:before {
-      content: "✓ ";
-      color: #667eea;
-      font-weight: bold;
-      margin-right: 8px;
-    }
-    
-    .button {
-      display: inline-block;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      padding: 14px 30px;
-      border-radius: 8px;
-      text-decoration: none;
-      font-weight: 600;
-      transition: transform 0.2s;
-    }
-    
-    .button:hover {
-      transform: translateY(-2px);
-    }
-    
-    .status {
-      margin-top: 20px;
-      padding: 10px;
-      background: #fff3cd;
-      border-radius: 8px;
-      color: #856404;
-      font-size: 14px;
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="icon">📡</div>
-    <h1>You're Offline</h1>
-    <p>No internet connection detected. But don't worry, you can still use the app!</p>
-    
-    <div class="features">
-      <h3>Available Offline:</h3>
-      <ul>
-        <li>View cached items and categories</li>
-        <li>Create new orders</li>
-        <li>Add expenses</li>
-        <li>Print receipts via Bluetooth</li>
-      </ul>
-    </div>
-    
-    <p style="font-size: 14px; color: #888;">
-      Your changes will automatically sync when you're back online.
-    </p>
-    
-    <a href="/" class="button">Try Again</a>
-    
-    <div class="status" id="status">
-      Checking connection...
-    </div>
-  </div>
-
-  <script>
-    // Check for online status
-    function updateStatus() {
-      const statusEl = document.getElementById('status');
-      if (navigator.onLine) {
-        statusEl.style.background = '#d4edda';
-        statusEl.style.color = '#155724';
-        statusEl.textContent = '✓ Connection restored! Redirecting...';
-        setTimeout(() => {
-          window.location.href = '/';
-        }, 1500);
-      } else {
-        statusEl.style.background = '#fff3cd';
-        statusEl.style.color = '#856404';
-        statusEl.textContent = '⚠ Still offline - waiting for connection';
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Offline - Restaurant POS</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
       }
-    }
 
-    // Update status immediately
-    updateStatus();
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto",
+          sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+      }
 
-    // Listen for online event
-    window.addEventListener('online', updateStatus);
-    window.addEventListener('offline', updateStatus);
+      .container {
+        background: white;
+        border-radius: 20px;
+        padding: 40px;
+        max-width: 400px;
+        text-align: center;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      }
 
-    // Check every 5 seconds
-    setInterval(updateStatus, 5000);
-  </script>
-</body>
+      .icon {
+        width: 80px;
+        height: 80px;
+        margin: 0 auto 20px;
+        background: #f0f0f0;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 40px;
+      }
+
+      h1 {
+        color: #333;
+        margin-bottom: 15px;
+        font-size: 28px;
+      }
+
+      p {
+        color: #666;
+        line-height: 1.6;
+        margin-bottom: 25px;
+      }
+
+      .features {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 20px;
+        margin: 20px 0;
+        text-align: left;
+      }
+
+      .features h3 {
+        color: #667eea;
+        margin-bottom: 15px;
+        font-size: 16px;
+      }
+
+      .features ul {
+        list-style: none;
+      }
+
+      .features li {
+        padding: 8px 0;
+        color: #555;
+        font-size: 14px;
+      }
+
+      .features li:before {
+        content: "✓ ";
+        color: #667eea;
+        font-weight: bold;
+        margin-right: 8px;
+      }
+
+      .button {
+        display: inline-block;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 14px 30px;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: 600;
+        transition: transform 0.2s;
+      }
+
+      .button:hover {
+        transform: translateY(-2px);
+      }
+
+      .status {
+        margin-top: 20px;
+        padding: 10px;
+        background: #fff3cd;
+        border-radius: 8px;
+        color: #856404;
+        font-size: 14px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="icon">📡</div>
+      <h1>You're Offline</h1>
+      <p>
+        No internet connection detected. But don't worry, you can still use the
+        app!
+      </p>
+
+      <div class="features">
+        <h3>Available Offline:</h3>
+        <ul>
+          <li>View cached items and categories</li>
+          <li>Create new orders</li>
+          <li>Add expenses</li>
+          <li>Print receipts via Bluetooth</li>
+        </ul>
+      </div>
+
+      <p style="font-size: 14px; color: #888">
+        Your changes will automatically sync when you're back online.
+      </p>
+
+      <a href="/" class="button">Try Again</a>
+
+      <div class="status" id="status">Checking connection...</div>
+    </div>
+
+    <script>
+      // Check for online status
+      function updateStatus() {
+        const statusEl = document.getElementById("status");
+        if (navigator.onLine) {
+          statusEl.style.background = "#d4edda";
+          statusEl.style.color = "#155724";
+          statusEl.textContent = "✓ Connection restored! Redirecting...";
+          setTimeout(() => {
+            window.location.href = "/";
+          }, 1500);
+        } else {
+          statusEl.style.background = "#fff3cd";
+          statusEl.style.color = "#856404";
+          statusEl.textContent = "⚠ Still offline - waiting for connection";
+        }
+      }
+
+      // Update status immediately
+      updateStatus();
+
+      // Listen for online event
+      window.addEventListener("online", updateStatus);
+      window.addEventListener("offline", updateStatus);
+
+      // Check every 5 seconds
+      setInterval(updateStatus, 5000);
+    </script>
+  </body>
 </html>

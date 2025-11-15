@@ -46,19 +46,20 @@ export const useItemStore = create<ItemState>((set, get) => ({
     try {
       const items = await itemsApi.getAll(filters || get().filters);
       set({ items, isLoading: false });
-      
+
       // Cache items for offline use
       await cacheItems(items);
-      await cacheDataForOffline('items', items);
+      await cacheDataForOffline("items", items);
     } catch (error: any) {
       // Try to load from cache if offline
       const cachedItems = await getCachedItems();
       if (cachedItems.length > 0) {
         set({ items: cachedItems, isLoading: false });
-        console.log('📦 Loaded items from cache (offline)');
+        console.log("📦 Loaded items from cache (offline)");
       } else {
         set({
-          error: error.response?.data?.error?.message || "Failed to fetch items",
+          error:
+            error.response?.data?.error?.message || "Failed to fetch items",
           isLoading: false,
         });
       }

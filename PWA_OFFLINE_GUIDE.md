@@ -3,17 +3,20 @@
 ## ✨ Features Implemented
 
 ### 1. **Persistent Bluetooth Printer Connection**
+
 - ✅ Printer device ID stored in localStorage
 - ✅ Auto-reconnects on app startup
 - ✅ No more "sync printer" reminder on every order page
 - ✅ Works seamlessly across sessions
 
 **How it works:**
+
 - First time: Pair your Bluetooth printer (Shreyans SC588 or compatible)
 - After pairing: Printer automatically reconnects when you open the app
 - Disconnect only when you manually choose to unpair
 
 ### 2. **Fixed Invoice Logo Display**
+
 - ✅ Outlet logo now shows full size without cropping
 - ✅ Proper aspect ratio maintained
 - ✅ Max-width increased to 200px for better visibility
@@ -22,15 +25,18 @@
 ### 3. **Complete PWA Support**
 
 #### Install to Home Screen
+
 - **Android/Chrome:** Automatic install prompt after 30 seconds
 - **iOS Safari:** Manual instructions shown with step-by-step guide
 - **Appears as native app** on your phone's home screen
 - **Quick access** via app shortcuts
 
 #### Offline Functionality
+
 The app now works completely offline with these features:
 
 **Available Offline:**
+
 - ✅ View all cached menu items
 - ✅ View categories
 - ✅ Create new orders
@@ -39,6 +45,7 @@ The app now works completely offline with these features:
 - ✅ View outlet information
 
 **Auto-Sync When Online:**
+
 - Orders created offline automatically sync when internet returns
 - Expenses saved offline sync in background
 - Items and categories update from server when online
@@ -46,6 +53,7 @@ The app now works completely offline with these features:
 ### 4. **Technical Implementation**
 
 #### IndexedDB Storage
+
 ```typescript
 // Stores in browser:
 - items (menu items with images)
@@ -57,6 +65,7 @@ The app now works completely offline with these features:
 ```
 
 #### Service Worker Caching
+
 ```javascript
 // Caching strategies:
 - Static assets: Cache-first
@@ -66,6 +75,7 @@ The app now works completely offline with these features:
 ```
 
 #### Background Sync
+
 - Orders/expenses created offline are queued
 - Automatically sync when connection restored
 - No data loss even with spotty internet
@@ -75,12 +85,14 @@ The app now works completely offline with these features:
 ### Installing as PWA
 
 **On Android (Chrome):**
+
 1. Open the app in Chrome
 2. Wait 30 seconds or tap the install banner
 3. Click "Install App"
 4. App appears on home screen
 
 **On iOS (Safari):**
+
 1. Open the app in Safari
 2. Tap the Share button (square with arrow)
 3. Scroll down and tap "Add to Home Screen"
@@ -89,11 +101,13 @@ The app now works completely offline with these features:
 ### Using Offline
 
 1. **First Visit (Online):**
+
    - Open the app while connected to internet
    - Browse items - they're automatically cached
    - View categories - cached for offline use
 
 2. **Going Offline:**
+
    - App shows offline notification
    - All cached data remains available
    - Create orders and expenses as normal
@@ -108,17 +122,20 @@ The app now works completely offline with these features:
 ### Bluetooth Printer Setup
 
 **First Time:**
+
 1. Go to Settings > Printer or Orders > Create Order
 2. Tap the Bluetooth icon
 3. Select your printer from the list
 4. Printer is now paired
 
 **Next Time:**
+
 - Printer automatically reconnects
 - No need to pair again
 - Just print normally
 
 **Unpair:**
+
 - Disconnect in printer settings
 - Next visit will prompt to pair again
 
@@ -127,6 +144,7 @@ The app now works completely offline with these features:
 ### Files Created/Modified
 
 **New Files:**
+
 - `frontend/src/lib/db.ts` - IndexedDB utilities
 - `frontend/src/lib/pwa.ts` - PWA initialization
 - `frontend/src/components/InstallPWA.tsx` - Install prompt
@@ -136,6 +154,7 @@ The app now works completely offline with these features:
 - `frontend/public/icon-*.png` - PWA icons (8 sizes)
 
 **Modified Files:**
+
 - `frontend/src/lib/bluetoothPrinter.ts` - Added localStorage persistence
 - `frontend/src/hooks/useBluetoothPrinter.ts` - Auto-reconnect on mount
 - `frontend/src/store/itemStore.ts` - Offline caching support
@@ -147,12 +166,14 @@ The app now works completely offline with these features:
 ### Browser Support
 
 **Full Support:**
+
 - ✅ Chrome Android 80+
 - ✅ Safari iOS 13+
 - ✅ Edge 80+
 - ✅ Samsung Internet 12+
 
 **Partial Support:**
+
 - ⚠️ Firefox Android (no Bluetooth API)
 - ⚠️ Chrome iOS (limited PWA features)
 
@@ -174,24 +195,28 @@ The app now works completely offline with these features:
 ## 🔧 Troubleshooting
 
 ### Printer Won't Auto-Connect
+
 1. Check Bluetooth is enabled
 2. Printer is powered on
 3. Clear browser cache and reconnect
 4. Try manual disconnect/reconnect
 
 ### Offline Data Not Syncing
+
 1. Check internet connection
 2. Refresh the page
 3. Check browser console for errors
 4. Clear app data and re-cache items
 
 ### Install Prompt Not Showing
+
 1. Wait 30 seconds after opening app
 2. Check you're not in incognito/private mode
 3. Try different browser (Chrome recommended)
 4. Manually add to home screen (iOS)
 
 ### App Not Working Offline
+
 1. Visit all pages once while online to cache
 2. Check service worker is registered (DevTools)
 3. Clear cache and reload
@@ -214,6 +239,7 @@ The app now works completely offline with these features:
 ## 🚀 Future Enhancements
 
 Potential improvements:
+
 - Push notifications for order status
 - Voice commands for order creation
 - Image compression before caching

@@ -86,22 +86,22 @@ export const useOrderStore = create<OrderState>((set, get) => ({
           ...data,
           id: `offline_${Date.now()}`,
           createdAt: new Date().toISOString(),
-          status: 'pending',
+          status: "pending",
           isOffline: true,
         } as any;
-        
+
         await saveOrderOffline(offlineOrder);
-        
+
         set((state) => ({
           orders: [offlineOrder, ...state.orders],
           currentOrder: offlineOrder,
           isLoading: false,
         }));
-        
-        toast.info('Order saved offline. Will sync when online.');
+
+        toast.info("Order saved offline. Will sync when online.");
         return offlineOrder;
       }
-      
+
       set({
         error: error.response?.data?.error?.message || "Failed to create order",
         isLoading: false,
