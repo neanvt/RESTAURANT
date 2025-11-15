@@ -147,16 +147,26 @@ export default function InstallPWA() {
                 Add to your home screen for quick access and offline support!
               </p>
 
-              {/* Android/Chrome Install - Always show button */}
+              {/* Android/Chrome Install */}
               {!isIOS && (
-                <Button
-                  onClick={handleInstall}
-                  disabled={!deferredPrompt}
-                  className="w-full bg-white text-blue-600 hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  {deferredPrompt ? 'Install App' : 'Waiting for install prompt...'}
-                </Button>
+                <div className="space-y-2">
+                  {deferredPrompt ? (
+                    <Button
+                      onClick={handleInstall}
+                      className="w-full bg-white text-blue-600 hover:bg-blue-50"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Install App
+                    </Button>
+                  ) : (
+                    <div className="text-center text-sm text-blue-100">
+                      <p className="mb-2">To install this app:</p>
+                      <p className="text-xs">
+                        Tap your browser&apos;s menu and select &quot;Install app&quot; or &quot;Add to Home screen&quot;
+                      </p>
+                    </div>
+                  )}
+                </div>
               )}
 
               {/* iOS Install Instructions */}
