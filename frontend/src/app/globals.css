@@ -2,6 +2,25 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Responsive font sizing for better mobile display */
+html {
+  font-size: clamp(14px, 2.5vw, 16px);
+}
+
+/* Ensure proper scaling on very small screens */
+@media (max-width: 360px) {
+  html {
+    font-size: 13px;
+  }
+}
+
+/* Slightly larger on tablets */
+@media (min-width: 768px) {
+  html {
+    font-size: 16px;
+  }
+}
+
 /* Hide scrollbar for category filter */
 .hide-scrollbar::-webkit-scrollbar {
   display: none;
