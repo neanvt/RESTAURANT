@@ -13,20 +13,33 @@ const generateInvoiceNumber = async (outletId: string): Promise<string> => {
   const dateStr = today.toISOString().split("T")[0]; // YYYY-MM-DD
   const counterId = `invoice_${outletId}_${dateStr}`;
 
-  // Use findOneAndUpdate with upsert to atomically increment the counter
-  const counter = await Counter.findOneAndUpdate(
-    { _id: counterId },
-    {
-      $inc: { sequence: 1 },
-      $setOnInsert: { date: today },
-    },
-    {
-      upsert: true,
-      new: true,
-    }
-  );
+  try {
+    console.log(`🔄 Generating invoice number for outlet ${outletId} on ${dateStr}`);
+    
+    // Use findOneAndUpdate with upsert to atomically increment the counter
+    const counter = await Counter.findOneAndUpdate(
+      { _id: counterId },
+      {
+        $inc: { sequence: 1 },
+        $setOnInsert: { date: today },
+      },
+      {
+        upsert: true,
+        new: true,
+        setDefaultsOnInsert: true,
+      }
+    );
 
-  return counter.sequence.toString();
+    if (!counter) {
+      throw new Error("Failed to generate invoice counter");
+    }
+
+    console.log(`✅ Generated invoice number: ${counter.sequence}`);
+    return counter.sequence.toString();
+  } catch (error: any) {
+    console.error(`❌ Error generating invoice number:`, error);
+    throw new Error(`Failed to generate invoice number: ${error.message}`);
+  }
 };
 
 // Generate UPI QR code

@@ -16,6 +16,8 @@ const generateOrderNumber = async (outletId: string): Promise<string> => {
   const counterId = `order_${outletId}_${dateStr}`;
 
   try {
+    console.log(`🔄 Generating order number for outlet ${outletId} on ${dateStr}`);
+    
     // Use findOneAndUpdate with upsert to atomically increment the counter
     const counter = await Counter.findOneAndUpdate(
       { _id: counterId },
@@ -26,14 +28,20 @@ const generateOrderNumber = async (outletId: string): Promise<string> => {
       {
         upsert: true,
         new: true,
+        setDefaultsOnInsert: true,
       }
     );
+
+    if (!counter) {
+      throw new Error("Failed to generate counter");
+    }
 
     console.log(`✅ Generated order number: ${counter.sequence} for outlet ${outletId} on ${dateStr}`);
     return counter.sequence.toString();
   } catch (error: any) {
     console.error(`❌ Error generating order number:`, error);
-    throw error;
+    console.error("Counter model available:", !!Counter);
+    throw new Error(`Failed to generate order number: ${error.message}`);
   }
 };
 
@@ -45,20 +53,33 @@ const generateKOTNumber = async (outletId: string): Promise<string> => {
   const dateStr = today.toISOString().split("T")[0]; // YYYY-MM-DD
   const counterId = `kot_${outletId}_${dateStr}`;
 
-  // Use findOneAndUpdate with upsert to atomically increment the counter
-  const counter = await Counter.findOneAndUpdate(
-    { _id: counterId },
-    {
-      $inc: { sequence: 1 },
-      $setOnInsert: { date: today },
-    },
-    {
-      upsert: true,
-      new: true,
-    }
-  );
+  try {
+    console.log(`🔄 Generating KOT number for outlet ${outletId} on ${dateStr}`);
+    
+    // Use findOneAndUpdate with upsert to atomically increment the counter
+    const counter = await Counter.findOneAndUpdate(
+      { _id: counterId },
+      {
+        $inc: { sequence: 1 },
+        $setOnInsert: { date: today },
+      },
+      {
+        upsert: true,
+        new: true,
+        setDefaultsOnInsert: true,
+      }
+    );
 
-  return counter.sequence.toString();
+    if (!counter) {
+      throw new Error("Failed to generate KOT counter");
+    }
+
+    console.log(`✅ Generated KOT number: ${counter.sequence}`);
+    return counter.sequence.toString();
+  } catch (error: any) {
+    console.error(`❌ Error generating KOT number:`, error);
+    throw new Error(`Failed to generate KOT number: ${error.message}`);
+  }
 };
 
 // Generate Invoice number - uses atomic counter to prevent race conditions
@@ -69,20 +90,33 @@ const generateInvoiceNumber = async (outletId: string): Promise<string> => {
   const dateStr = today.toISOString().split("T")[0]; // YYYY-MM-DD
   const counterId = `invoice_${outletId}_${dateStr}`;
 
-  // Use findOneAndUpdate with upsert to atomically increment the counter
-  const counter = await Counter.findOneAndUpdate(
-    { _id: counterId },
-    {
-      $inc: { sequence: 1 },
-      $setOnInsert: { date: today },
-    },
-    {
-      upsert: true,
-      new: true,
-    }
-  );
+  try {
+    console.log(`🔄 Generating invoice number for outlet ${outletId} on ${dateStr}`);
+    
+    // Use findOneAndUpdate with upsert to atomically increment the counter
+    const counter = await Counter.findOneAndUpdate(
+      { _id: counterId },
+      {
+        $inc: { sequence: 1 },
+        $setOnInsert: { date: today },
+      },
+      {
+        upsert: true,
+        new: true,
+        setDefaultsOnInsert: true,
+      }
+    );
 
-  return counter.sequence.toString();
+    if (!counter) {
+      throw new Error("Failed to generate invoice counter");
+    }
+
+    console.log(`✅ Generated invoice number: ${counter.sequence}`);
+    return counter.sequence.toString();
+  } catch (error: any) {
+    console.error(`❌ Error generating invoice number:`, error);
+    throw new Error(`Failed to generate invoice number: ${error.message}`);
+  }
 };
 
 // Calculate order totals
@@ -276,11 +310,21 @@ export const createOrder = async (
       data: order,
     });
   } catch (error: any) {
-    console.error("Order creation error:", error);
-    console.error("Error stack:", error.stack);
+    console.error("❌ Order creation error:", error);
+    console.error("Error details:", {
+      name: error.name,
+      message: error.message,
+      code: error.code,
+      stack: error.stack,
+    });
+    
     res.status(500).json({
       success: false,
-      error: { message: error.message || "Failed to create order" },
+      error: { 
+        message: error.message || "Failed to create order",
+        code: error.code,
+        details: process.env.NODE_ENV === "development" ? error.stack : undefined,
+      },
     });
   }
 };
