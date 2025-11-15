@@ -108,26 +108,9 @@ export default function InstallPWA() {
     localStorage.setItem("pwa-install-dismissed", Date.now().toString());
   };
 
-  const handleShowManually = () => {
-    setShowInstallBanner(true);
-  };
-
-  // Show manual trigger button in development (always show if not installed)
-  if (isStandalone) {
+  // Don't show anything if already installed or banner is hidden
+  if (isStandalone || !showInstallBanner) {
     return null;
-  }
-
-  // Show test button if banner is hidden
-  if (!showInstallBanner) {
-    return (
-      <button
-        onClick={handleShowManually}
-        className="fixed bottom-4 right-4 bg-blue-600 text-white px-3 py-2 rounded-lg shadow-lg hover:bg-blue-700 transition-colors text-xs z-50 opacity-50 hover:opacity-100"
-        title="Show install prompt"
-      >
-        📱 Install
-      </button>
-    );
   }
 
   return (
