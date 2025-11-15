@@ -17,13 +17,13 @@ const config: Config = {
     },
     extend: {
       fontSize: {
-        'xs': 'clamp(0.75rem, 2vw, 0.75rem)',
-        'sm': 'clamp(0.875rem, 2.5vw, 0.875rem)',
-        'base': 'clamp(1rem, 3vw, 1rem)',
-        'lg': 'clamp(1.125rem, 3.5vw, 1.125rem)',
-        'xl': 'clamp(1.25rem, 4vw, 1.25rem)',
-        '2xl': 'clamp(1.5rem, 5vw, 1.5rem)',
-        '3xl': 'clamp(1.875rem, 6vw, 1.875rem)',
+        xs: "clamp(0.75rem, 2vw, 0.75rem)",
+        sm: "clamp(0.875rem, 2.5vw, 0.875rem)",
+        base: "clamp(1rem, 3vw, 1rem)",
+        lg: "clamp(1.125rem, 3.5vw, 1.125rem)",
+        xl: "clamp(1.25rem, 4vw, 1.25rem)",
+        "2xl": "clamp(1.5rem, 5vw, 1.5rem)",
+        "3xl": "clamp(1.875rem, 6vw, 1.875rem)",
       },
       colors: {
         border: "hsl(var(--border))",

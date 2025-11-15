@@ -62,23 +62,15 @@ export default function InstallPWA() {
       console.log("beforeinstallprompt event fired");
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
-
-      // Show banner after 5 seconds (reduced from 30s for testing)
-      setTimeout(() => {
-        console.log("Showing install banner");
-        setShowInstallBanner(true);
-      }, 5000);
     };
 
     window.addEventListener("beforeinstallprompt", handler);
 
-    // For iOS, show banner after delay if not installed
-    if (iOS && !standalone) {
-      console.log("iOS detected, showing install instructions after delay");
-      setTimeout(() => {
-        setShowInstallBanner(true);
-      }, 5000);
-    }
+    // Show banner after 5 seconds for all non-installed cases
+    setTimeout(() => {
+      console.log("Showing install banner");
+      setShowInstallBanner(true);
+    }, 5000);
 
     return () => {
       window.removeEventListener("beforeinstallprompt", handler);
@@ -155,28 +147,16 @@ export default function InstallPWA() {
                 Add to your home screen for quick access and offline support!
               </p>
 
-              {/* Android/Chrome Install */}
+              {/* Android/Chrome Install - Always show button */}
               {!isIOS && (
-                <div className="space-y-2">
-                  {deferredPrompt ? (
-                    <Button
-                      onClick={handleInstall}
-                      className="w-full bg-white text-blue-600 hover:bg-blue-50"
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Install App
-                    </Button>
-                  ) : (
-                    <div className="bg-white/10 rounded-lg p-3 text-sm">
-                      <p className="font-medium mb-2">To install:</p>
-                      <ol className="space-y-1 text-blue-100">
-                        <li>1. Tap the menu (⋮) in your browser</li>
-                        <li>2. Tap "Install app" or "Add to Home screen"</li>
-                        <li>3. Follow the prompts to install</li>
-                      </ol>
-                    </div>
-                  )}
-                </div>
+                <Button
+                  onClick={handleInstall}
+                  disabled={!deferredPrompt}
+                  className="w-full bg-white text-blue-600 hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  {deferredPrompt ? 'Install App' : 'Waiting for install prompt...'}
+                </Button>
               )}
 
               {/* iOS Install Instructions */}
