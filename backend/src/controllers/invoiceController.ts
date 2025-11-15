@@ -2,30 +2,31 @@ import { Request, Response } from "express";
 import Invoice from "../models/Invoice";
 import Order from "../models/Order";
 import Outlet from "../models/Outlet";
+import Counter from "../models/Counter";
 import QRCode from "qrcode";
 
-// Generate invoice number - just returns daily sequence number
+// Generate invoice number - uses atomic counter to prevent race conditions
 const generateInvoiceNumber = async (outletId: string): Promise<string> => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
 
-  const lastInvoice = await Invoice.findOne({
-    outletId,
-    createdAt: {
-      $gte: today,
-      $lt: tomorrow,
+  const dateStr = today.toISOString().split("T")[0]; // YYYY-MM-DD
+  const counterId = `invoice_${outletId}_${dateStr}`;
+
+  // Use findOneAndUpdate with upsert to atomically increment the counter
+  const counter = await Counter.findOneAndUpdate(
+    { _id: counterId },
+    {
+      $inc: { sequence: 1 },
+      $setOnInsert: { date: today },
     },
-  }).sort({ createdAt: -1 });
+    {
+      upsert: true,
+      new: true,
+    }
+  );
 
-  let sequence = 1;
-  if (lastInvoice && lastInvoice.invoiceNumber) {
-    const lastSequence = parseInt(lastInvoice.invoiceNumber) || 0;
-    sequence = lastSequence + 1;
-  }
-
-  return sequence.toString();
+  return counter.sequence.toString();
 };
 
 // Generate UPI QR code
