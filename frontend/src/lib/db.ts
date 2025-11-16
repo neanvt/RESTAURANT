@@ -138,10 +138,13 @@ class Database {
   async addToSyncQueue(
     item: Omit<SyncQueueItem, "id" | "timestamp" | "synced">
   ): Promise<void> {
+    const timestamp = typeof window !== "undefined" ? Date.now() : 0;
+    const random = typeof window !== "undefined" ? Math.random() : 0;
+    
     const queueItem: SyncQueueItem = {
-      id: `${item.type}_${Date.now()}_${Math.random()}`,
+      id: `${item.type}_${timestamp}_${random}`,
       ...item,
-      timestamp: Date.now(),
+      timestamp,
       synced: false,
     };
     await this.put("syncQueue", queueItem);
@@ -220,7 +223,7 @@ export async function getCachedCategories(): Promise<any[]> {
 export async function saveOrderOffline(order: any): Promise<void> {
   const orderWithId = {
     ...order,
-    id: order.id || `offline_${Date.now()}`,
+    id: order.id || `offline_${typeof window !== "undefined" ? Date.now() : 0}`,
     createdAt: order.createdAt || new Date().toISOString(),
     isOffline: true,
   };
@@ -239,7 +242,7 @@ export async function saveOrderOffline(order: any): Promise<void> {
 export async function saveExpenseOffline(expense: any): Promise<void> {
   const expenseWithId = {
     ...expense,
-    id: expense.id || `offline_${Date.now()}`,
+    id: expense.id || `offline_${typeof window !== "undefined" ? Date.now() : 0}`,
     createdAt: expense.createdAt || new Date().toISOString(),
     isOffline: true,
   };

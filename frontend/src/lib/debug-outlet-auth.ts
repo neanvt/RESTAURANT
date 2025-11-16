@@ -46,7 +46,7 @@ export const debugOutletAuth = () => {
           const parts = token.split(".");
           if (parts.length === 3) {
             const payload = JSON.parse(atob(parts[1]));
-            const now = Math.floor(Date.now() / 1000);
+            const now = Math.floor((typeof window !== "undefined" ? Date.now() : 0) / 1000);
             console.log("📅 Token Payload:", {
               userId: payload.userId,
               role: payload.role,

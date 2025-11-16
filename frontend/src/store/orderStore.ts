@@ -84,7 +84,7 @@ export const useOrderStore = create<OrderState>((set, get) => ({
       if (!isOnline()) {
         const offlineOrder = {
           ...data,
-          id: `offline_${Date.now()}`,
+          id: `offline_${typeof window !== "undefined" ? Date.now() : 0}`,
           createdAt: new Date().toISOString(),
           status: "pending",
           isOffline: true,

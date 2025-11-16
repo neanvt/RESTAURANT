@@ -27,6 +27,11 @@ export default function InstallPWA() {
 
     console.log("🔍 PWA Install Component initialized");
 
+    // Ensure we're in browser environment
+    if (typeof window === "undefined" || typeof navigator === "undefined") {
+      return;
+    }
+
     // Check if running on iOS
     const iOS =
       /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
@@ -153,7 +158,9 @@ export default function InstallPWA() {
 
   const handleDismiss = () => {
     setShowInstallBanner(false);
-    localStorage.setItem("pwa-install-dismissed", Date.now().toString());
+    if (typeof localStorage !== "undefined") {
+      localStorage.setItem("pwa-install-dismissed", Date.now().toString());
+    }
   };
 
   // Don't render until mounted (prevents hydration mismatch)

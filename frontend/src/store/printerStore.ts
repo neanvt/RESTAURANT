@@ -61,7 +61,7 @@ export const usePrinterStore = create<PrinterState>((set) => ({
     set({ isLoading: true, error: null });
     try {
       const newPrinter: Printer = {
-        _id: Date.now().toString(),
+        _id: (typeof window !== "undefined" ? Date.now() : 0).toString(),
         ...data,
         isOnline: false,
         outlet: "outlet1",

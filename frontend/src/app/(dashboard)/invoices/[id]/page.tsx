@@ -144,11 +144,11 @@ export default function InvoiceDetailPage() {
             <div className="flex justify-between items-start mb-6">
               {/* Business Info */}
               <div className="flex items-start gap-4">
-                {currentInvoice.outlet.logo?.url && (
+                {currentInvoice?.outlet?.logo?.url && (
                   <div className="w-16 h-16 relative rounded-lg overflow-hidden border">
                     <Image
                       src={currentInvoice.outlet.logo.url}
-                      alt={currentInvoice.outlet.businessName}
+                      alt={currentInvoice.outlet.businessName || 'Business Logo'}
                       fill
                       className="object-cover"
                     />
