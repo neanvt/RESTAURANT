@@ -148,7 +148,9 @@ export default function InvoiceDetailPage() {
                   <div className="w-16 h-16 relative rounded-lg overflow-hidden border">
                     <Image
                       src={currentInvoice.outlet.logo.url}
-                      alt={currentInvoice.outlet.businessName || 'Business Logo'}
+                      alt={
+                        currentInvoice.outlet.businessName || "Business Logo"
+                      }
                       fill
                       className="object-cover"
                     />

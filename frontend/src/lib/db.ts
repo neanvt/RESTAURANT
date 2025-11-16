@@ -140,7 +140,7 @@ class Database {
   ): Promise<void> {
     const timestamp = typeof window !== "undefined" ? Date.now() : 0;
     const random = typeof window !== "undefined" ? Math.random() : 0;
-    
+
     const queueItem: SyncQueueItem = {
       id: `${item.type}_${timestamp}_${random}`,
       ...item,
@@ -242,7 +242,8 @@ export async function saveOrderOffline(order: any): Promise<void> {
 export async function saveExpenseOffline(expense: any): Promise<void> {
   const expenseWithId = {
     ...expense,
-    id: expense.id || `offline_${typeof window !== "undefined" ? Date.now() : 0}`,
+    id:
+      expense.id || `offline_${typeof window !== "undefined" ? Date.now() : 0}`,
     createdAt: expense.createdAt || new Date().toISOString(),
     isOffline: true,
   };
