@@ -173,7 +173,7 @@ export default function InvoicePreview({
               </div>
             )}
 
-            <div className="border-t border-dashed border-gray-300 my-4"></div>
+            <div className="border-t border-dashed border-gray-300 my-1"></div>
 
             {/* Footer */}
             <div className="text-center text-xs text-gray-600">

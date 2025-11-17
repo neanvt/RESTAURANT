@@ -108,7 +108,7 @@ export default function KOTPreview({
 
             {order.notes && (
               <>
-                <div className="border-t border-dashed border-gray-300 my-4"></div>
+                <div className="border-t border-dashed border-gray-300 my-2"></div>
                 <div className="text-xs text-gray-600">
                   <div className="font-semibold mb-1">Notes:</div>
                   <div>{order.notes}</div>
