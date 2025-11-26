@@ -87,7 +87,7 @@ class BluetoothPrinterService {
   private device: any | null = null; // BluetoothDevice
   private characteristic: any | null = null; // BluetoothRemoteGATTCharacteristic
   private encoder = new TextEncoder();
-  private readonly STORAGE_KEY = 'bluetooth_printer_device';
+  private readonly STORAGE_KEY = "bluetooth_printer_device";
 
   // Standard Bluetooth service UUID for serial port
   private readonly SERVICE_UUID = "000018f0-0000-1000-8000-00805f9b34fb";
@@ -105,8 +105,11 @@ class BluetoothPrinterService {
    * Save printer device ID to localStorage
    */
   private saveDevice(deviceId: string, deviceName: string): void {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(this.STORAGE_KEY, JSON.stringify({ id: deviceId, name: deviceName }));
+    if (typeof window !== "undefined") {
+      localStorage.setItem(
+        this.STORAGE_KEY,
+        JSON.stringify({ id: deviceId, name: deviceName })
+      );
     }
   }
 
@@ -114,7 +117,7 @@ class BluetoothPrinterService {
    * Get saved printer device info
    */
   private getSavedDevice(): { id: string; name: string } | null {
-    if (typeof window === 'undefined') return null;
+    if (typeof window === "undefined") return null;
     const saved = localStorage.getItem(this.STORAGE_KEY);
     return saved ? JSON.parse(saved) : null;
   }
@@ -123,7 +126,7 @@ class BluetoothPrinterService {
    * Clear saved printer device
    */
   private clearSavedDevice(): void {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       localStorage.removeItem(this.STORAGE_KEY);
     }
   }
@@ -139,7 +142,7 @@ class BluetoothPrinterService {
       // Try to get the device from bluetooth devices
       const devices = await navigator.bluetooth.getDevices();
       const device = devices.find((d: any) => d.id === saved.id);
-      
+
       if (!device || !device.gatt) {
         this.clearSavedDevice();
         return false;
@@ -148,8 +151,10 @@ class BluetoothPrinterService {
       this.device = device;
       const server = await device.gatt.connect();
       const service = await server.getPrimaryService(this.SERVICE_UUID);
-      this.characteristic = await service.getCharacteristic(this.CHARACTERISTIC_UUID);
-      
+      this.characteristic = await service.getCharacteristic(
+        this.CHARACTERISTIC_UUID
+      );
+
       console.log("✅ Auto-reconnected to printer:", saved.name);
       return true;
     } catch (error) {
@@ -540,7 +545,7 @@ class BluetoothPrinterService {
     await this.write("Please visit again\n");
     await this.write(Commands.ALIGN_LEFT);
 
-    await this.feed(2);
+    // await this.feed(2);
     await this.cut();
   }
 
@@ -599,7 +604,7 @@ class BluetoothPrinterService {
     await this.write(kot.outletName + "\n");
     await this.write(Commands.ALIGN_LEFT);
 
-    await this.feed(2);
+    // await this.feed(2);
     await this.cut();
   }
 }
