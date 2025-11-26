@@ -165,6 +165,83 @@ class BluetoothPrinterService {
   }
 
   /**
+   * Enhanced auto-discovery that attempts to connect to any known printer types
+   * This tries to connect to already paired devices automatically
+   */
+  async autoDiscoverAndConnect(): Promise<boolean> {
+    if (!this.isSupported()) {
+      throw new Error("Web Bluetooth is not supported on this device.");
+    }
+
+    // First try auto-reconnect
+    const reconnected = await this.autoReconnect();
+    if (reconnected) return true;
+
+    // Try to get already paired devices and connect to printers automatically
+    try {
+      const devices = await navigator.bluetooth.getDevices();
+      
+      for (const device of devices) {
+        // Look for printer-like devices
+        if (device.name && this.isPrinterDevice(device.name)) {
+          try {
+            this.device = device;
+            const server = await device.gatt?.connect();
+            if (server) {
+              const service = await server.getPrimaryService(this.SERVICE_UUID);
+              this.characteristic = await service.getCharacteristic(this.CHARACTERISTIC_UUID);
+              
+              // Save this device for future auto-reconnect
+              this.saveDevice(device.id, device.name);
+              
+              console.log("✅ Auto-connected to discovered printer:", device.name);
+              return true;
+            }
+          } catch (error) {
+            console.log("Failed to connect to device:", device.name, error);
+            continue;
+          }
+        }
+      }
+    } catch (error) {
+      console.log("Failed to get paired devices:", error);
+    }
+
+    return false;
+  }
+
+  /**
+   * Check if a device name suggests it's a printer
+   */
+  private isPrinterDevice(name: string): boolean {
+    const printerKeywords = [
+      'printer', 'pos', 'thermal', 'receipt', 'bluetooth printer',
+      'rpp', 'mtp', 'shreyans', 'sc588', 'zj', 'epson', 'star',
+      'xprinter', 'gprinter', 'bixolon', 'citizen'
+    ];
+    
+    const lowerName = name.toLowerCase();
+    return printerKeywords.some(keyword => lowerName.includes(keyword));
+  }
+
+  /**
+   * Smart connect that tries auto-discovery first, then falls back to manual selection
+   */
+  async smartConnect(): Promise<boolean> {
+    // Try auto-discovery first
+    const autoConnected = await this.autoDiscoverAndConnect();
+    if (autoConnected) return true;
+
+    // Fall back to manual device selection
+    try {
+      await this.connect();
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  /**
    * Connect to a Bluetooth thermal printer
    */
   async connect(): Promise<void> {
@@ -175,7 +252,7 @@ class BluetoothPrinterService {
     }
 
     try {
-      // Request Bluetooth device
+      // Enhanced device filters to catch more printer types
       this.device = await navigator.bluetooth.requestDevice({
         filters: [
           { services: [this.SERVICE_UUID] },
@@ -185,6 +262,15 @@ class BluetoothPrinterService {
           { namePrefix: "Thermal" },
           { namePrefix: "RPP" },
           { namePrefix: "MTP" },
+          { namePrefix: "ZJ" },
+          { namePrefix: "Shreyans" },
+          { namePrefix: "SC588" },
+          { namePrefix: "EPSON" },
+          { namePrefix: "Star" },
+          { namePrefix: "XPrinter" },
+          { namePrefix: "GPrinter" },
+          { namePrefix: "BIXOLON" },
+          { namePrefix: "Citizen" },
         ],
         optionalServices: [this.SERVICE_UUID],
       });

@@ -11,16 +11,16 @@ export function useBluetoothPrinter() {
 
   // Auto-reconnect on mount
   useEffect(() => {
-    const tryAutoReconnect = async () => {
+    const tryAutoConnect = async () => {
       if (bluetoothPrinter.isSupported() && !bluetoothPrinter.isConnected()) {
-        const reconnected = await bluetoothPrinter.autoReconnect();
-        if (reconnected) {
+        const connected = await bluetoothPrinter.autoDiscoverAndConnect();
+        if (connected) {
           setIsConnected(true);
-          console.log("✅ Printer auto-reconnected");
+          console.log("✅ Printer auto-connected on mount");
         }
       }
     };
-    tryAutoReconnect();
+    tryAutoConnect();
   }, []);
 
   /**
@@ -39,20 +39,13 @@ export function useBluetoothPrinter() {
 
     setIsConnecting(true);
     try {
-      // First try to auto-reconnect to a previously connected printer
-      const reconnected = await bluetoothPrinter.autoReconnect();
-      if (reconnected) {
+      // Use the enhanced smart connect method
+      const connected = await bluetoothPrinter.smartConnect();
+      if (connected) {
         setIsConnected(true);
-        console.log("✅ Auto-reconnected to saved printer");
+        console.log("✅ Successfully connected to Bluetooth printer");
         return true;
       }
-
-      // If no saved printer, try to discover and connect to any available printer
-      console.log("No saved printer found, attempting auto-discovery...");
-      
-      // Note: Web Bluetooth requires user gesture for requestDevice()
-      // So we cannot automatically connect without user interaction
-      // This is a security limitation of the Web Bluetooth API
       
       return false;
     } catch (error: any) {
