@@ -31,14 +31,22 @@ export function useBluetoothPrinter() {
     const baseDelay = 1000; // 1 second
 
     const backgroundReconnect = () => {
-      if (bluetoothPrinter.isSupported() && !bluetoothPrinter.isConnected() && retryCount < maxRetries) {
+      if (
+        bluetoothPrinter.isSupported() &&
+        !bluetoothPrinter.isConnected() &&
+        retryCount < maxRetries
+      ) {
         const delay = Math.min(baseDelay * Math.pow(2, retryCount), 16000); // Cap at 16 seconds
         retryTimeout = setTimeout(async () => {
           try {
             const connected = await bluetoothPrinter.autoDiscoverAndConnect();
             if (connected) {
               setIsConnected(true);
-              console.log(`✅ Background reconnection successful (attempt ${retryCount + 1})`);
+              console.log(
+                `✅ Background reconnection successful (attempt ${
+                  retryCount + 1
+                })`
+              );
               retryCount = 0; // Reset on success
             } else {
               retryCount++;
@@ -46,7 +54,10 @@ export function useBluetoothPrinter() {
             }
           } catch (error) {
             retryCount++;
-            console.log(`❌ Background reconnection failed (attempt ${retryCount}):`, error);
+            console.log(
+              `❌ Background reconnection failed (attempt ${retryCount}):`,
+              error
+            );
             backgroundReconnect(); // Try again
           }
         }, delay);
@@ -89,7 +100,7 @@ export function useBluetoothPrinter() {
         console.log("✅ Successfully connected to Bluetooth printer");
         return true;
       }
-      
+
       return false;
     } catch (error: any) {
       console.error("Auto-discovery failed:", error);

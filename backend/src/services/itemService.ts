@@ -553,26 +553,26 @@ class ItemService {
         { $match: query },
         {
           $lookup: {
-            from: 'orders',
-            let: { itemId: '$_id', outletId: '$outletId' },
+            from: "orders",
+            let: { itemId: "$_id", outletId: "$outletId" },
             pipeline: [
               {
                 $match: {
                   $expr: {
                     $and: [
-                      { $eq: ['$outletId', '$$outletId'] },
-                      { $in: ['$$itemId', '$items.item'] },
-                      { $gte: ['$createdAt', last30Days] },
-                      { $ne: ['$status', 'cancelled'] }
-                    ]
-                  }
-                }
+                      { $eq: ["$outletId", "$$outletId"] },
+                      { $in: ["$$itemId", "$items.item"] },
+                      { $gte: ["$createdAt", last30Days] },
+                      { $ne: ["$status", "cancelled"] },
+                    ],
+                  },
+                },
               },
-              { $unwind: '$items' },
+              { $unwind: "$items" },
               {
                 $match: {
-                  $expr: { $eq: ['$items.item', '$$itemId'] }
-                }
+                  $expr: { $eq: ["$items.item", "$$itemId"] },
+                },
               },
               {
                 $group: {
@@ -580,87 +580,92 @@ class ItemService {
                   todayCount: {
                     $sum: {
                       $cond: [
-                        { $gte: ['$createdAt', today] },
-                        '$items.quantity',
-                        0
-                      ]
-                    }
+                        { $gte: ["$createdAt", today] },
+                        "$items.quantity",
+                        0,
+                      ],
+                    },
                   },
                   last7DaysCount: {
                     $sum: {
                       $cond: [
-                        { $gte: ['$createdAt', last7Days] },
-                        '$items.quantity',
-                        0
-                      ]
-                    }
+                        { $gte: ["$createdAt", last7Days] },
+                        "$items.quantity",
+                        0,
+                      ],
+                    },
                   },
                   last30DaysCount: {
-                    $sum: '$items.quantity'
-                  }
-                }
-              }
+                    $sum: "$items.quantity",
+                  },
+                },
+              },
             ],
-            as: 'popularity'
-          }
+            as: "popularity",
+          },
         },
         {
           $addFields: {
             popularityData: {
-              $ifNull: [{ $arrayElemAt: ['$popularity', 0] }, {
-                todayCount: 0,
-                last7DaysCount: 0,
-                last30DaysCount: 0
-              }]
-            }
-          }
+              $ifNull: [
+                { $arrayElemAt: ["$popularity", 0] },
+                {
+                  todayCount: 0,
+                  last7DaysCount: 0,
+                  last30DaysCount: 0,
+                },
+              ],
+            },
+          },
         },
         {
           $addFields: {
-            todayCount: '$popularityData.todayCount',
-            last7DaysCount: '$popularityData.last7DaysCount',
-            last30DaysCount: '$popularityData.last30DaysCount',
+            todayCount: "$popularityData.todayCount",
+            last7DaysCount: "$popularityData.last7DaysCount",
+            last30DaysCount: "$popularityData.last30DaysCount",
             // Create a composite sort score: today * 1000 + last7Days * 100 + last30Days * 10
             popularityScore: {
               $add: [
-                { $multiply: ['$popularityData.todayCount', 1000] },
-                { $multiply: ['$popularityData.last7DaysCount', 100] },
-                { $multiply: ['$popularityData.last30DaysCount', 10] }
-              ]
-            }
-          }
+                { $multiply: ["$popularityData.todayCount", 1000] },
+                { $multiply: ["$popularityData.last7DaysCount", 100] },
+                { $multiply: ["$popularityData.last30DaysCount", 10] },
+              ],
+            },
+          },
         },
         {
           $lookup: {
-            from: 'categories',
-            localField: 'category',
-            foreignField: '_id',
-            as: 'category'
-          }
+            from: "categories",
+            localField: "category",
+            foreignField: "_id",
+            as: "category",
+          },
         },
         {
           $unwind: {
-            path: '$category',
-            preserveNullAndEmptyArrays: true
-          }
+            path: "$category",
+            preserveNullAndEmptyArrays: true,
+          },
         },
         {
           $sort: {
-            popularityScore: -1,  // Higher popularity first
-            name: 1              // Then alphabetical
-          }
+            popularityScore: -1, // Higher popularity first
+            name: 1, // Then alphabetical
+          },
         },
         {
           $project: {
             popularity: 0,
             popularityData: 0,
-            popularityScore: 0
-          }
-        }
+            popularityScore: 0,
+          },
+        },
       ]);
 
-      logger.info(`Fetched ${itemsWithPopularity.length} items with popularity data`);
-      
+      logger.info(
+        `Fetched ${itemsWithPopularity.length} items with popularity data`
+      );
+
       return itemsWithPopularity as IItem[];
     } catch (error: any) {
       logger.error("Error fetching items with popularity:", error);

@@ -185,7 +185,10 @@ class BluetoothPrinterService {
     if (reconnected) return true;
 
     // Strategy 1: Try to get already paired devices (if API is available)
-    if (navigator.bluetooth && typeof navigator.bluetooth.getDevices === 'function') {
+    if (
+      navigator.bluetooth &&
+      typeof navigator.bluetooth.getDevices === "function"
+    ) {
       try {
         const pairedConnected = await this.connectToPairedDevices();
         if (pairedConnected) return true;
@@ -211,14 +214,15 @@ class BluetoothPrinterService {
    */
   private async connectToPairedDevices(): Promise<boolean> {
     try {
-
       const devices = await navigator.bluetooth.getDevices();
       console.log(`Found ${devices.length} paired Bluetooth devices`);
 
       for (const device of devices) {
         // Look for printer-like devices
         if (device.name && this.isPrinterDevice(device.name)) {
-          console.log(`Attempting to connect to potential printer: ${device.name}`);
+          console.log(
+            `Attempting to connect to potential printer: ${device.name}`
+          );
           try {
             if (!device.gatt) {
               console.log(`Device ${device.name} has no GATT interface`);
@@ -227,7 +231,7 @@ class BluetoothPrinterService {
 
             this.device = device;
             const server = await device.gatt.connect();
-            
+
             try {
               const service = await server.getPrimaryService(this.SERVICE_UUID);
               this.characteristic = await service.getCharacteristic(
@@ -243,7 +247,10 @@ class BluetoothPrinterService {
               );
               return true;
             } catch (serviceError) {
-              console.log(`Service/characteristic error for ${device.name}:`, serviceError);
+              console.log(
+                `Service/characteristic error for ${device.name}:`,
+                serviceError
+              );
               // Try to disconnect if we connected but couldn't get service
               try {
                 server.disconnect();
@@ -258,7 +265,7 @@ class BluetoothPrinterService {
           }
         }
       }
-      
+
       console.log("No compatible printers found in paired devices");
     } catch (error) {
       console.log("Failed to get paired devices:", error);
@@ -293,16 +300,18 @@ class BluetoothPrinterService {
       "milestone",
       "print",
       "58mm",
-      "80mm"
+      "80mm",
     ];
 
     const lowerName = name.toLowerCase();
-    const isMatch = printerKeywords.some((keyword) => lowerName.includes(keyword));
-    
+    const isMatch = printerKeywords.some((keyword) =>
+      lowerName.includes(keyword)
+    );
+
     if (isMatch) {
       console.log(`Device '${name}' identified as potential printer`);
     }
-    
+
     return isMatch;
   }
 
@@ -328,12 +337,13 @@ class BluetoothPrinterService {
       // Attempt to connect using watchAdvertisements if available
       // This is a more advanced approach for newer Chrome versions
       console.log("Attempting silent connection via advertisement watching...");
-      
-      // For now, we'll return false as true silent connection 
+
+      // For now, we'll return false as true silent connection
       // requires the device to be pre-paired or use experimental APIs
-      console.log("Silent connection not available - requires user interaction for security");
+      console.log(
+        "Silent connection not available - requires user interaction for security"
+      );
       return false;
-      
     } catch (error) {
       console.log("Silent connection attempt failed:", error);
       return false;

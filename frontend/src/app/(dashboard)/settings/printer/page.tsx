@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useBluetoothPrinter } from "@/hooks/useBluetoothPrinter";
-import { BluetoothNotSupported } from "@/components/BluetoothNotSupported";
+import BluetoothNotSupported from "@/components/BluetoothNotSupported";
 import {
   Bluetooth,
   BluetoothConnected,

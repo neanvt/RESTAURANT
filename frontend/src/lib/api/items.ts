@@ -43,7 +43,9 @@ export const itemsApi = {
       params.append("isAvailable", String(filters.isAvailable));
     if (filters?.search) params.append("search", filters.search);
 
-    const response = await api.get(`/items/with-popularity?${params.toString()}`);
+    const response = await api.get(
+      `/items/with-popularity?${params.toString()}`
+    );
     return response.data.data;
   },
 

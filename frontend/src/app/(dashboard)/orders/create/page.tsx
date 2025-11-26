@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   Plus,
@@ -42,10 +42,11 @@ interface CartItem extends Item {
   notes?: string;
 }
 
-export default function CreateOrderPage() {
+function CreateOrderPageComponent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { items, filters, fetchItemsWithPopularity, setFilters } = useItemStore();
+  const { items, filters, fetchItemsWithPopularity, setFilters } =
+    useItemStore();
   const { createOrder, generateKOT, holdOrder, getOrderById, resumeOrder } =
     useOrderStore();
   const { categories, fetchCategories } = useCategoryStore();
@@ -1000,5 +1001,26 @@ export default function CreateOrderPage() {
           />
         )}
     </div>
+  );
+}
+
+// Loading component for Suspense
+function OrderPageLoading() {
+  return (
+    <div className="flex items-center justify-center min-h-screen">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+        <p className="mt-4 text-muted-foreground">Loading order page...</p>
+      </div>
+    </div>
+  );
+}
+
+// Main component wrapped in Suspense
+export default function CreateOrderPage() {
+  return (
+    <Suspense fallback={<OrderPageLoading />}>
+      <CreateOrderPageComponent />
+    </Suspense>
   );
 }

@@ -56,7 +56,10 @@ export const getItems = async (req: Request, res: Response): Promise<void> => {
 /**
  * Get all items with popularity sorting
  */
-export const getItemsWithPopularity = async (req: Request, res: Response): Promise<void> => {
+export const getItemsWithPopularity = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     const outletId = req.outletId;
 

@@ -49,18 +49,23 @@ export const useItemStore = create<ItemState>((set, get) => ({
       // Ensure we have required fields for the backend
       const enhancedFilters = {
         ...currentFilters,
-        isAvailable: currentFilters.isAvailable !== undefined ? currentFilters.isAvailable : true
+        isAvailable:
+          currentFilters.isAvailable !== undefined
+            ? currentFilters.isAvailable
+            : true,
       };
-      
+
       const rawItems = await itemsApi.getAll(enhancedFilters);
-      
+
       // Normalize items for consistent id field
-      const normalizedItems = rawItems.map(item => ({
-        ...item,
-        id: item.id || item._id,
-        _id: undefined
-      })).filter(item => item.id);
-      
+      const normalizedItems = rawItems
+        .map((item: any) => ({
+          ...item,
+          id: item.id || item._id,
+          _id: undefined,
+        }))
+        .filter((item) => item.id);
+
       set({ items: normalizedItems, isLoading: false });
 
       // Cache normalized items for offline use
@@ -92,18 +97,23 @@ export const useItemStore = create<ItemState>((set, get) => ({
       // Ensure we have required fields for the backend
       const enhancedFilters = {
         ...currentFilters,
-        isAvailable: currentFilters.isAvailable !== undefined ? currentFilters.isAvailable : true
+        isAvailable:
+          currentFilters.isAvailable !== undefined
+            ? currentFilters.isAvailable
+            : true,
       };
-      
+
       const rawItems = await itemsApi.getAllWithPopularity(enhancedFilters);
-      
+
       // Normalize items to ensure consistent id field for both state and cache
-      const normalizedItems = rawItems.map(item => ({
-        ...item,
-        id: item.id || item._id, // Ensure id field exists
-        _id: undefined // Remove _id to avoid confusion
-      })).filter(item => item.id); // Only include items with valid ids
-      
+      const normalizedItems = rawItems
+        .map((item: any) => ({
+          ...item,
+          id: item.id || item._id, // Ensure id field exists
+          _id: undefined, // Remove _id to avoid confusion
+        }))
+        .filter((item) => item.id); // Only include items with valid ids
+
       set({ items: normalizedItems, isLoading: false });
 
       // Cache normalized items for offline use
@@ -118,17 +128,22 @@ export const useItemStore = create<ItemState>((set, get) => ({
         const currentFilters = filters || get().filters;
         const enhancedFilters = {
           ...currentFilters,
-          isAvailable: currentFilters.isAvailable !== undefined ? currentFilters.isAvailable : true
+          isAvailable:
+            currentFilters.isAvailable !== undefined
+              ? currentFilters.isAvailable
+              : true,
         };
         const rawItems = await itemsApi.getAll(enhancedFilters);
-        
+
         // Normalize items for consistent id field
-        const normalizedItems = rawItems.map(item => ({
-          ...item,
-          id: item.id || item._id,
-          _id: undefined
-        })).filter(item => item.id);
-        
+        const normalizedItems = rawItems
+          .map((item: any) => ({
+            ...item,
+            id: item.id || item._id,
+            _id: undefined,
+          }))
+          .filter((item) => item.id);
+
         set({ items: normalizedItems, isLoading: false });
         await cacheItems(normalizedItems);
         await cacheDataForOffline("items", normalizedItems);
@@ -141,7 +156,8 @@ export const useItemStore = create<ItemState>((set, get) => ({
         } else {
           set({
             error:
-              fallbackError.response?.data?.error?.message || "Failed to fetch items",
+              fallbackError.response?.data?.error?.message ||
+              "Failed to fetch items",
             isLoading: false,
           });
         }
