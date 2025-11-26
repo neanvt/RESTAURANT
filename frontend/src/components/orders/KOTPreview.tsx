@@ -32,10 +32,10 @@ export default function KOTPreview({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-hidden flex flex-col">
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 print:bg-white print:static print:p-0">
+      <div className="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-hidden flex flex-col print:max-w-full print:max-h-full print:rounded-none print:shadow-none">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b">
+        <div className="flex items-center justify-between p-4 border-b print-hide">
           <h2 className="text-lg font-semibold">Preview</h2>
           <div className="flex items-center gap-2">
             <button
@@ -48,18 +48,20 @@ export default function KOTPreview({
         </div>
 
         {/* KOT Content - Scrollable */}
-        <div className="flex-1 overflow-y-auto p-6 bg-gray-50">
-          <div className="bg-white p-6 rounded-lg shadow-sm">
+        <div className="flex-1 overflow-y-auto p-6 bg-gray-50 print:p-0 print:bg-white print:overflow-visible">
+          <div className="bg-white p-4 rounded-lg shadow-sm receipt-print font-source-sans print-kot print:p-2 print:shadow-none print:rounded-none">
             {/* Outlet Name */}
-            <div className="text-center mb-2">
-              <div className="font-bold text-lg">
+            <div className="text-center mb-3">
+              <div className="receipt-header text-base font-semibold text-gray-900">
                 {outlet?.businessName || "Restaurant"}
               </div>
               {outlet?.address && typeof outlet.address === "string" && (
-                <div className="text-xs text-gray-600">{outlet.address}</div>
+                <div className="print-compact text-gray-600 mt-1">
+                  {outlet.address}
+                </div>
               )}
               {outlet?.address && typeof outlet.address === "object" && (
-                <div className="text-xs text-gray-600">
+                <div className="print-compact text-gray-600 mt-1">
                   {[
                     outlet.address.street,
                     outlet.address.city,
@@ -72,36 +74,39 @@ export default function KOTPreview({
               )}
             </div>
 
-            <div className="border-t border-dashed border-gray-300 my-3"></div>
+            <div className="receipt-separator"></div>
 
             {/* Date & KOT Info */}
-            <div className="text-center mb-4">
-              <div className="text-sm text-gray-600">
+            <div className="text-center mb-3">
+              <div className="print-small text-gray-600">
                 {formatDate(kot.createdAt)}
               </div>
-              <div className="text-lg font-bold mt-1">
+              <div className="receipt-title text-gray-900 font-medium mt-1">
                 KOT - {kot.kotNumber}
               </div>
               {order.tableNumber && (
-                <div className="text-sm text-gray-600 mt-1">
+                <div className="print-small text-gray-600 mt-1">
                   Table No. {order.tableNumber}
                 </div>
               )}
             </div>
 
-            <div className="border-t border-dashed border-gray-300 my-4"></div>
+            <div className="receipt-separator"></div>
 
             {/* Items */}
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm font-semibold">
+            <div className="space-y-1">
+              <div className="flex justify-between print-small font-medium text-gray-800">
                 <span>Item</span>
                 <span>QTY</span>
               </div>
-              <div className="border-t border-dashed border-gray-300 my-2"></div>
+              <div className="receipt-separator"></div>
               {order.items.map((item: any, index: number) => (
-                <div key={index} className="flex justify-between text-sm py-1">
-                  <span className="flex-1">{item.name}</span>
-                  <span className="text-right font-medium">
+                <div
+                  key={index}
+                  className="flex justify-between print-compact py-0.5 text-gray-900"
+                >
+                  <span className="flex-1 font-light">{item.name}</span>
+                  <span className="text-right font-medium text-sm ml-2">
                     {item.quantity}
                   </span>
                 </div>
@@ -110,10 +115,10 @@ export default function KOTPreview({
 
             {order.notes && (
               <>
-                <div className="border-t border-dashed border-gray-300 my-2"></div>
-                <div className="text-xs text-gray-600">
-                  <div className="font-semibold mb-1">Notes:</div>
-                  <div>{order.notes}</div>
+                <div className="receipt-separator"></div>
+                <div className="print-compact text-gray-700">
+                  <div className="font-medium mb-1 text-gray-800">Notes:</div>
+                  <div className="font-light italic">{order.notes}</div>
                 </div>
               </>
             )}
@@ -121,7 +126,7 @@ export default function KOTPreview({
         </div>
 
         {/* Footer Buttons */}
-        <div className="p-4 border-t bg-white flex gap-3">
+        <div className="p-4 border-t bg-white flex gap-3 print-hide">
           <Button variant="outline" onClick={onClose} className="flex-1">
             Close
           </Button>

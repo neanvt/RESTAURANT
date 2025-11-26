@@ -19,6 +19,7 @@ interface KOTState {
     status: string
   ) => Promise<KOT>;
   getKOTsByOrder: (orderId: string) => Promise<KOT[]>;
+  cleanupOldKOTs: () => Promise<void>;
   setFilters: (filters: KOTFilters) => void;
   setCurrentKOT: (kot: KOT | null) => void;
   clearError: () => void;
@@ -124,6 +125,46 @@ export const useKOTStore = create<KOTState>((set, get) => ({
         isLoading: false,
       });
       throw error;
+    }
+  },
+
+  cleanupOldKOTs: async () => {
+    const today = new Date();
+    const todayDateStr = today.toISOString().split("T")[0]; // Get YYYY-MM-DD format
+
+    // Get last cleanup date from localStorage
+    const lastCleanupKey = "last_kot_cleanup_date";
+    const lastCleanup =
+      typeof window !== "undefined"
+        ? localStorage.getItem(lastCleanupKey)
+        : null;
+
+    // Only cleanup if it's a new day
+    if (lastCleanup !== todayDateStr) {
+      try {
+        // Filter out KOTs that are not from today
+        set((state) => ({
+          kots: state.kots.filter((kot) => {
+            const kotDate = new Date(kot.createdAt).toISOString().split("T")[0];
+            return kotDate === todayDateStr;
+          }),
+          currentKOT:
+            state.currentKOT &&
+            new Date(state.currentKOT.createdAt).toISOString().split("T")[0] ===
+              todayDateStr
+              ? state.currentKOT
+              : null,
+        }));
+
+        // Update last cleanup date
+        if (typeof window !== "undefined") {
+          localStorage.setItem(lastCleanupKey, todayDateStr);
+        }
+
+        console.log(`🧹 Cleaned up old KOTs. Today: ${todayDateStr}`);
+      } catch (error) {
+        console.error("Error cleaning up old KOTs:", error);
+      }
     }
   },
 

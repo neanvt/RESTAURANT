@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Roboto_Mono, Source_Sans_3 } from "next/font/google";
 import { Toaster } from "sonner";
 import PWAInit from "@/components/PWAInit";
 import InstallPWA from "@/components/InstallPWA";
@@ -7,6 +7,19 @@ import BluetoothPrinterManager from "@/components/BluetoothPrinterManager";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"] });
+
+// Professional fonts for printing
+const sourceSans = Source_Sans_3({
+  subsets: ["latin"],
+  variable: "--font-source-sans",
+  weight: ["300", "400", "500", "600", "700"],
+});
+
+const robotoMono = Roboto_Mono({
+  subsets: ["latin"],
+  variable: "--font-roboto-mono",
+  weight: ["300", "400", "500", "600", "700"],
+});
 
 export const metadata: Metadata = {
   title: "Restaurant POS System",
@@ -69,7 +82,10 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-title" content="Restaurant POS" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
       </head>
-      <body className={inter.className} suppressHydrationWarning>
+      <body
+        className={`${inter.className} ${sourceSans.variable} ${robotoMono.variable}`}
+        suppressHydrationWarning
+      >
         <PWAInit />
         {children}
         <InstallPWA />

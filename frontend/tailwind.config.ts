@@ -16,6 +16,26 @@ const config: Config = {
       },
     },
     extend: {
+      fontFamily: {
+        "source-sans": [
+          "var(--font-source-sans)",
+          "Source Sans 3",
+          "system-ui",
+          "sans-serif",
+        ],
+        "roboto-mono": [
+          "var(--font-roboto-mono)",
+          "Roboto Mono",
+          "Monaco",
+          "monospace",
+        ],
+        print: [
+          "var(--font-source-sans)",
+          "Source Sans 3",
+          "system-ui",
+          "sans-serif",
+        ],
+      },
       fontSize: {
         xs: "clamp(0.75rem, 2vw, 0.75rem)",
         sm: "clamp(0.875rem, 2.5vw, 0.875rem)",

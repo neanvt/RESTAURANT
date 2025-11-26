@@ -25,6 +25,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CategoryFilter } from "@/components/items/CategoryFilter";
 import { useItemStore } from "@/store/itemStore";
 import { useOrderStore } from "@/store/orderStore";
+import { useKOTStore } from "@/store/kotStore";
 import { useCategoryStore } from "@/store/categoryStore";
 import { useOutletStore } from "@/store/outletStore";
 import { Item } from "@/types/item";
@@ -49,6 +50,7 @@ function CreateOrderPageComponent() {
     useItemStore();
   const { createOrder, generateKOT, holdOrder, getOrderById, resumeOrder } =
     useOrderStore();
+  const { cleanupOldKOTs } = useKOTStore();
   const { categories, fetchCategories } = useCategoryStore();
   const { currentOutlet, fetchCurrentOutlet } = useOutletStore();
 
@@ -87,6 +89,9 @@ function CreateOrderPageComponent() {
       await fetchCategories();
       await fetchItemsWithPopularity();
       await fetchCurrentOutlet();
+
+      // Cleanup old KOTs when app opens on new date
+      await cleanupOldKOTs();
     };
     loadData();
   }, []);

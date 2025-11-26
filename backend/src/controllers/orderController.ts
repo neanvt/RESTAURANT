@@ -60,7 +60,7 @@ const generateOrderNumber = async (outletId: string): Promise<string> => {
   }
 };
 
-// Generate KOT number - Format: KOT#04/12112025
+// Generate KOT number - Simple format: 001, 002, etc.
 const generateKOTNumber = async (outletId: string): Promise<string> => {
   // Get current date in local timezone
   const today = new Date();
@@ -94,16 +94,8 @@ const generateKOTNumber = async (outletId: string): Promise<string> => {
       throw new Error("Failed to generate KOT counter");
     }
 
-    // Format date as DDMMYYYY
-    const day = today.getDate().toString().padStart(2, "0");
-    const month = (today.getMonth() + 1).toString().padStart(2, "0");
-    const year = today.getFullYear();
-    const formattedDate = `${day}${month}${year}`;
-
-    // Format: KOT#04/12112025
-    const formattedNumber = `KOT#${counter.sequence
-      .toString()
-      .padStart(2, "0")}/${formattedDate}`;
+    // Simple format: 001, 002, 003, etc.
+    const formattedNumber = counter.sequence.toString().padStart(3, "0");
 
     console.log(`✅ Generated KOT number: ${formattedNumber}`);
     return formattedNumber;

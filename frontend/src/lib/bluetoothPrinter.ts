@@ -17,8 +17,8 @@ const Commands = {
   BOLD_OFF: `${ESC}E0`,
   UNDERLINE_ON: `${ESC}-1`,
   UNDERLINE_OFF: `${ESC}-0`,
-  DOUBLE_WIDTH: `${GS}!0x11`,
-  NORMAL_WIDTH: `${GS}!0x00`,
+  DOUBLE_WIDTH: `${GS}!\x11`,
+  NORMAL_WIDTH: `${GS}!\x00`,
 
   // Alignment
   ALIGN_LEFT: `${ESC}a0`,
@@ -26,22 +26,23 @@ const Commands = {
   ALIGN_RIGHT: `${ESC}a2`,
 
   // Text size
-  SIZE_NORMAL: `${GS}!0x00`,
-  SIZE_DOUBLE_HEIGHT: `${GS}!0x01`,
-  SIZE_DOUBLE_WIDTH: `${GS}!0x10`,
-  SIZE_DOUBLE: `${GS}!0x11`,
-  SIZE_TRIPLE: `${GS}!0x22`,
+  SIZE_NORMAL: `${GS}!\x00`,
+  SIZE_DOUBLE_HEIGHT: `${GS}!\x01`,
+  SIZE_DOUBLE_WIDTH: `${GS}!\x10`,
+  SIZE_DOUBLE: `${GS}!\x11`,
+  SIZE_SMALL: `${GS}!\x00`,
 
   // Line spacing
   LINE_SPACING_DEFAULT: `${ESC}2`,
-  LINE_SPACING_NARROW: `${ESC}30`,
+  LINE_SPACING_NARROW: `${ESC}3\x10`,
 
   // Paper cutting
-  CUT_PAPER: `${GS}V0`,
-  CUT_PAPER_PARTIAL: `${GS}V1`,
+  CUT_PAPER: `${GS}V\x00`,
+  CUT_PAPER_PARTIAL: `${GS}V\x01`,
 
   // Feed
   FEED_LINE: "\n",
+  FEED_LINES_2: "\n\n",
   FEED_LINES_3: "\n\n\n",
 
   // Barcode
@@ -72,9 +73,10 @@ const Commands = {
     );
   },
 
-  // Line
+  // Line separators (32 chars for 58mm)
   HORIZONTAL_LINE: "--------------------------------",
   DOUBLE_LINE: "================================",
+  DOTTED_LINE: "................................",
 };
 
 export interface BluetoothPrinterDevice {
@@ -458,6 +460,36 @@ class BluetoothPrinterService {
   }
 
   /**
+   * Wrap text to fit within specified width
+   */
+  private wrapText(text: string, width: number): string[] {
+    const words = text.split(" ");
+    const lines: string[] = [];
+    let currentLine = "";
+
+    for (const word of words) {
+      if ((currentLine + word).length <= width) {
+        currentLine += (currentLine ? " " : "") + word;
+      } else {
+        if (currentLine) {
+          lines.push(currentLine);
+          currentLine = word;
+        } else {
+          // Word is longer than width, split it
+          lines.push(word.substring(0, width));
+          currentLine = word.substring(width);
+        }
+      }
+    }
+
+    if (currentLine) {
+      lines.push(currentLine);
+    }
+
+    return lines;
+  }
+
+  /**
    * Send raw data to printer
    */
   private async write(data: string | Uint8Array): Promise<void> {
@@ -486,7 +518,7 @@ class BluetoothPrinterService {
       bold?: boolean;
       underline?: boolean;
       align?: "left" | "center" | "right";
-      size?: "normal" | "double" | "triple";
+      size?: "normal" | "double" | "small";
     }
   ): Promise<void> {
     let output = "";
@@ -500,7 +532,7 @@ class BluetoothPrinterService {
     else output += Commands.ALIGN_LEFT;
 
     if (options?.size === "double") output += Commands.SIZE_DOUBLE;
-    else if (options?.size === "triple") output += Commands.SIZE_TRIPLE;
+    else if (options?.size === "small") output += Commands.SIZE_SMALL;
     else output += Commands.SIZE_NORMAL;
 
     // Add text
@@ -667,7 +699,7 @@ class BluetoothPrinterService {
   }
 
   /**
-   * Print invoice/receipt - Compact format matching screen
+   * Print invoice/receipt - Professional thermal printer format
    */
   async printInvoice(invoice: {
     outletName: string;
@@ -689,91 +721,153 @@ class BluetoothPrinterService {
     customerName?: string;
   }): Promise<void> {
     await this.initialize();
+    await this.write(Commands.LINE_SPACING_NARROW);
 
-    // Header - centered, normal text
+    // Header
     await this.write(Commands.ALIGN_CENTER);
-    await this.write(invoice.outletName.substring(0, 32));
-    await this.write("\n");
+    await this.write(Commands.BOLD_ON);
+    await this.write(invoice.outletName.substring(0, 32) + "\n");
+    await this.write(Commands.BOLD_OFF);
 
     if (invoice.outletAddress) {
-      await this.write(invoice.outletAddress.substring(0, 32));
-      await this.write("\n");
+      // Auto-wrap address to fit 32 character width
+      const addressLines = this.wrapText(invoice.outletAddress, 32);
+      for (const line of addressLines) {
+        await this.write(line + "\n");
+      }
     }
     if (invoice.outletPhone) {
-      await this.write(invoice.outletPhone);
-      await this.write("\n");
+      await this.write("Ph: " + invoice.outletPhone + "\n");
     }
     await this.write(Commands.ALIGN_LEFT);
-    await this.write("--------------------------------\n");
+    await this.write(Commands.HORIZONTAL_LINE + "\n");
 
-    // Tax Invoice label
+    // Invoice type
     await this.write(Commands.ALIGN_CENTER);
-    await this.write("Tax Invoice\n");
+    await this.write(Commands.BOLD_ON);
+    await this.write("TAX INVOICE\n");
+    await this.write(Commands.BOLD_OFF);
     await this.write(Commands.ALIGN_LEFT);
-    await this.write("--------------------------------\n");
+    await this.write(Commands.HORIZONTAL_LINE + "\n");
 
     // Invoice details
-    await this.write("Invoice #: " + invoice.invoiceNumber + "\n");
-    await this.write("Date: " + invoice.date + "\n");
+    await this.write("Invoice: " + invoice.invoiceNumber + "\n");
+
+    // Format date properly - handle various date formats
+    let formattedDateTime;
+    try {
+      const dateObj =
+        typeof invoice.date === "string"
+          ? new Date(invoice.date)
+          : invoice.date;
+      if (dateObj && !isNaN(dateObj.getTime())) {
+        formattedDateTime = dateObj.toLocaleString("en-IN", {
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false,
+        });
+      } else {
+        // Fallback to current date if parsing fails
+        formattedDateTime = new Date().toLocaleString("en-IN", {
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false,
+        });
+      }
+    } catch (error) {
+      console.error("Date parsing error:", error);
+      formattedDateTime = new Date().toLocaleString("en-IN", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      });
+    }
+    await this.write("Date: " + formattedDateTime + "\n");
     if (invoice.customerName) {
-      await this.write("Customer: " + invoice.customerName + "\n");
+      await this.write(
+        "Customer: " + invoice.customerName.substring(0, 22) + "\n"
+      );
     }
-    await this.write("--------------------------------\n");
+    await this.write(Commands.HORIZONTAL_LINE + "\n");
 
-    // Items header - matching screen
-    await this.write("Item Name         Qty    Price\n");
-    await this.write("--------------------------------\n");
+    // Items header - full width utilization (32 chars)
+    await this.write("Item              Qty  Price\n");
+    await this.write(Commands.DOTTED_LINE + "\n");
 
-    // Items - exactly as shown on screen
+    // Items with full width spacing - 18+1+4+1+8 = 32 chars
     for (const item of invoice.items) {
-      const itemName = item.name.substring(0, 18).padEnd(18);
-      const qty = String(item.quantity).padStart(3);
-      const price = item.price.toFixed(2).padStart(8);
-      await this.write(itemName + qty + " " + price + "\n");
+      // Wrap item names that are too long (18 chars max for item)
+      const itemLines = this.wrapText(item.name, 18);
+      const qty = ("x" + item.quantity).padStart(4);
+      const price = ("Rs" + item.price.toFixed(0)).padStart(8);
+
+      // Print first line with qty and price - total = 18+1+4+1+8 = 32 chars
+      const firstLine = itemLines[0] || "";
+      await this.write(firstLine.padEnd(18) + " " + qty + " " + price + "\n");
+
+      // Print additional lines for wrapped item names (no qty/price)
+      for (let i = 1; i < itemLines.length; i++) {
+        await this.write(itemLines[i] + "\n");
+      }
     }
 
-    await this.write("--------------------------------\n");
+    await this.write(Commands.HORIZONTAL_LINE + "\n");
 
-    // Totals - right aligned
-    const subtotalStr = invoice.subtotal.toFixed(2);
+    // Totals with full width alignment (32 chars total)
+    const subtotalStr = "Rs" + invoice.subtotal.toFixed(0);
     await this.write("Subtotal:".padEnd(24) + subtotalStr.padStart(8) + "\n");
 
-    if (invoice.tax) {
-      const taxStr = invoice.tax.toFixed(2);
+    if (invoice.tax && invoice.tax > 0) {
+      const taxStr = "Rs" + invoice.tax.toFixed(0);
       await this.write("Tax:".padEnd(24) + taxStr.padStart(8) + "\n");
     }
 
-    if (invoice.discount) {
-      const discStr = invoice.discount.toFixed(2);
+    if (invoice.discount && invoice.discount > 0) {
+      const discStr = "Rs" + invoice.discount.toFixed(0);
       await this.write(
-        "Discount:".padEnd(24) + "-" + discStr.padStart(7) + "\n"
+        "Discount:".padEnd(24) + ("-" + discStr).padStart(8) + "\n"
       );
     }
 
-    await this.write("================================\n");
+    await this.write(Commands.DOUBLE_LINE + "\n");
 
-    // Grand total
-    const totalStr = invoice.total.toFixed(2);
+    // Grand total with full width alignment
+    const totalStr = "Rs" + invoice.total.toFixed(0);
+    await this.write(Commands.BOLD_ON);
+    await this.write(Commands.SIZE_DOUBLE_HEIGHT);
     await this.write("TOTAL:".padEnd(24) + totalStr.padStart(8) + "\n");
-    await this.write("================================\n");
+    await this.write(Commands.BOLD_OFF);
+    await this.write(Commands.SIZE_NORMAL);
+    await this.write(Commands.DOUBLE_LINE + "\n");
 
     if (invoice.paymentMethod) {
-      await this.write("Payment: " + invoice.paymentMethod + "\n");
+      await this.write(
+        "Payment: " + invoice.paymentMethod.toUpperCase() + "\n"
+      );
     }
 
     // Footer
     await this.write("\n");
     await this.write(Commands.ALIGN_CENTER);
-    await this.write("Thank you for your visit!\n");
-    await this.write("Please visit again\n");
+    await this.write("Thank you for visiting!\n");
+    await this.write("Please come again\n");
     await this.write(Commands.ALIGN_LEFT);
 
-    // await this.feed(2);
+    await this.feed(2);
     await this.cut();
   }
 
   /**
-   * Print KOT (Kitchen Order Ticket) - Compact format
+   * Print KOT (Kitchen Order Ticket) - Clean thermal printer format
    */
   async printKOT(kot: {
     outletName: string;
@@ -788,66 +882,109 @@ class BluetoothPrinterService {
     isHold?: boolean;
   }): Promise<void> {
     await this.initialize();
+    await this.write(Commands.LINE_SPACING_NARROW);
 
-    // Header - KITCHEN ORDER in normal text, with HOLD status if applicable
+    // Header
     await this.write(Commands.ALIGN_CENTER);
     if (kot.isHold) {
       await this.write(Commands.BOLD_ON);
-      await this.write("*** HOLD ORDER ***\n");
+      await this.write("** HOLD ORDER **\n");
       await this.write(Commands.BOLD_OFF);
-      await this.write("KITCHEN ORDER\n");
-    } else {
-      await this.write("KITCHEN ORDER\n");
     }
+    await this.write(Commands.SIZE_NORMAL);
+    await this.write("KITCHEN ORDER\n");
     await this.write(Commands.ALIGN_LEFT);
-    await this.write("================================\n");
+    await this.write(Commands.HORIZONTAL_LINE + "\n");
 
-    // Order details - exactly as screen shows
+    // Order details
     await this.write("KOT: " + kot.orderNumber + "\n");
-
     if (kot.tableNumber) {
-      await this.write("Table No: " + kot.tableNumber + "\n");
+      await this.write("Table: " + kot.tableNumber + "\n");
     }
 
-    await this.write("Time: " + kot.date + "\n");
+    // Format date properly - handle various date formats
+    let formattedDateTime;
+    try {
+      const dateObj =
+        typeof kot.date === "string" ? new Date(kot.date) : kot.date;
+      if (dateObj && !isNaN(dateObj.getTime())) {
+        formattedDateTime = dateObj.toLocaleString("en-IN", {
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false,
+        });
+      } else {
+        // Fallback to current date if parsing fails
+        formattedDateTime = new Date().toLocaleString("en-IN", {
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false,
+        });
+      }
+    } catch (error) {
+      console.error("Date parsing error:", error);
+      formattedDateTime = new Date().toLocaleString("en-IN", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      });
+    }
+    await this.write("Time: " + formattedDateTime + "\n");
 
     if (kot.isHold) {
       await this.write(Commands.BOLD_ON);
       await this.write("Status: ON HOLD\n");
       await this.write(Commands.BOLD_OFF);
     }
-
-    await this.write("================================\n");
+    await this.write(Commands.HORIZONTAL_LINE + "\n");
 
     // Items header
-    await this.write("Item                      QTY\n");
-    await this.write("--------------------------------\n");
+    await this.write("Item                     Qty\n");
+    await this.write(Commands.DOTTED_LINE + "\n");
 
-    // Items list
+    // Items list with wrapped names
     for (const item of kot.items) {
-      const itemName = item.name.substring(0, 26).padEnd(26);
+      // Wrap long item names to multiple lines
+      const itemLines = this.wrapText(item.name, 24);
       const qty = String(item.quantity).padStart(3);
-      await this.write(itemName + qty + "\n");
+
+      // Print first line with quantity
+      const firstLine = itemLines[0] || "";
+      await this.write(firstLine.padEnd(24) + " " + qty + "\n");
+
+      // Print additional lines for wrapped text
+      for (let i = 1; i < itemLines.length; i++) {
+        await this.write(itemLines[i] + "\n");
+      }
 
       // Notes if any
       if (item.notes) {
-        await this.write("  Note: " + item.notes.substring(0, 24) + "\n");
+        await this.write("  * " + item.notes.substring(0, 29) + "\n");
       }
     }
 
-    await this.write("================================\n");
+    await this.write(Commands.HORIZONTAL_LINE + "\n");
 
-    // Footer with hold status
+    // Footer
     await this.write(Commands.ALIGN_CENTER);
-    await this.write(kot.outletName + "\n");
+    await this.write(kot.outletName.substring(0, 32) + "\n");
     if (kot.isHold) {
       await this.write(Commands.BOLD_ON);
-      await this.write("*** ORDER ON HOLD ***\n");
+      await this.write("** ORDER ON HOLD **\n");
       await this.write(Commands.BOLD_OFF);
     }
     await this.write(Commands.ALIGN_LEFT);
 
-    // await this.feed(2);
+    await this.feed(2);
     await this.cut();
   }
 }
