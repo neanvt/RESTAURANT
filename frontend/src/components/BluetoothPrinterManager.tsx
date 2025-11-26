@@ -17,20 +17,20 @@ export default function BluetoothPrinterManager() {
     autoDiscoverAndConnect,
     connect,
   } = useBluetoothPrinter();
-  
+
   const [hasTriedAutoConnect, setHasTriedAutoConnect] = useState(false);
   const [showFloatingButton, setShowFloatingButton] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
 
-  // Periodic retry attempts (every 30 seconds, max 5 attempts)
+  // Periodic retry attempts (every 60 seconds, max 3 attempts)
   useEffect(() => {
-    if (!isSupported || isConnected || retryCount >= 5) return;
+    if (!isSupported || isConnected || retryCount >= 3) return;
 
     const retryInterval = setInterval(async () => {
       if (!isConnected && !isConnecting) {
-        console.log(`Attempting auto-connect retry ${retryCount + 1}/5`);
+        console.log(`Attempting auto-connect retry ${retryCount + 1}/3`);
         const success = await autoDiscoverAndConnect();
-        
+
         if (success) {
           toast.success("Bluetooth printer connected!", {
             icon: "🔗",
@@ -39,13 +39,19 @@ export default function BluetoothPrinterManager() {
           setShowFloatingButton(false);
           clearInterval(retryInterval);
         } else {
-          setRetryCount(prev => prev + 1);
+          setRetryCount((prev) => prev + 1);
         }
       }
-    }, 30000); // Retry every 30 seconds
+    }, 60000); // Retry every 60 seconds
 
     return () => clearInterval(retryInterval);
-  }, [isSupported, isConnected, isConnecting, retryCount, autoDiscoverAndConnect]);
+  }, [
+    isSupported,
+    isConnected,
+    isConnecting,
+    retryCount,
+    autoDiscoverAndConnect,
+  ]);
 
   // Auto-discover and connect on app load
   useEffect(() => {
@@ -58,10 +64,10 @@ export default function BluetoothPrinterManager() {
 
     const attemptAutoConnect = async () => {
       setHasTriedAutoConnect(true);
-      
+
       // Try enhanced auto-discovery which includes paired device scanning
       const success = await autoDiscoverAndConnect();
-      
+
       if (success) {
         toast.success("Bluetooth printer connected automatically!", {
           icon: "🔗",
@@ -72,19 +78,22 @@ export default function BluetoothPrinterManager() {
         // Show floating button with a hint for first-time setup
         if (isSupported) {
           setShowFloatingButton(true);
-          
+
           // Show a helpful toast for first-time users after a delay
           setTimeout(() => {
             if (!isConnected) {
-              toast.info("💡 Tap the Bluetooth icon to connect your printer", {
-                duration: 5000,
-                action: {
-                  label: "Connect",
-                  onClick: handleManualConnect,
-                },
-              });
+              toast.info(
+                "🔗 Bluetooth printer not found. Tap the icon to connect manually.",
+                {
+                  duration: 4000,
+                  action: {
+                    label: "Connect",
+                    onClick: handleManualConnect,
+                  },
+                }
+              );
             }
-          }, 2000);
+          }, 3000);
         }
       }
     };
@@ -94,13 +103,39 @@ export default function BluetoothPrinterManager() {
 
   // Handle manual connection
   const handleManualConnect = async () => {
-    const success = await connect();
-    if (success) {
-      setShowFloatingButton(false);
-      toast.success("Bluetooth printer connected!", {
-        icon: "🔗",
-        duration: 3000,
-      });
+    try {
+      const success = await connect();
+      if (success) {
+        setShowFloatingButton(false);
+        toast.success("Bluetooth printer connected!", {
+          icon: "🔗",
+          duration: 3000,
+        });
+      }
+    } catch (error) {
+      console.error("Manual connect failed:", error);
+
+      if (error instanceof Error) {
+        if (
+          error.message.includes("globally disabled") ||
+          error.message.includes("NotFoundError")
+        ) {
+          toast.error("Bluetooth is disabled in your browser", {
+            icon: "⚠️",
+            duration: 6000,
+            description: "Visit Printer Settings for setup instructions",
+            action: {
+              label: "Settings",
+              onClick: () => (window.location.href = "/settings/printer"),
+            },
+          });
+        } else {
+          toast.error("Failed to connect: " + error.message, {
+            icon: "❌",
+            duration: 4000,
+          });
+        }
+      }
     }
   };
 
@@ -120,7 +155,7 @@ export default function BluetoothPrinterManager() {
     <>
       {/* Connection Status Toast - only for successful auto-connections */}
       {/* Toasts are handled in the useEffect above */}
-      
+
       {/* Floating Connect Button - shown when printer not connected */}
       {showFloatingButton && !isConnected && (
         <div className="fixed bottom-20 right-4 z-50 md:bottom-4">

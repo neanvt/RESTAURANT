@@ -8,7 +8,6 @@ import QRCode from "qrcode";
 // Generate invoice number - uses atomic counter to prevent race conditions
 const generateInvoiceNumber = async (outletId: string): Promise<string> => {
   const today = new Date();
-  today.setHours(0, 0, 0, 0);
 
   const dateStr = today.toISOString().split("T")[0]; // YYYY-MM-DD
   const counterId = `invoice_${outletId}_${dateStr}`;

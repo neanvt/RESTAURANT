@@ -40,7 +40,6 @@ const KOTSchema = new Schema<IKOT>(
       type: Schema.Types.ObjectId,
       ref: "Outlet",
       required: true,
-      index: true,
     },
     orderId: { type: Schema.Types.ObjectId, ref: "Order", required: true },
     kotNumber: { type: String, required: true },

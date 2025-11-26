@@ -58,7 +58,6 @@ const OrderSchema = new Schema<IOrder>(
       type: Schema.Types.ObjectId,
       ref: "Outlet",
       required: true,
-      index: true,
     },
     orderNumber: { type: String, required: true },
     items: [OrderItemSchema],

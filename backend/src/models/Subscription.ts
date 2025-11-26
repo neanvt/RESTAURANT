@@ -124,7 +124,6 @@ const SubscriptionSchema = new Schema<ISubscription>(
       ref: "Outlet",
       required: true,
       unique: true,
-      index: true,
     },
     tier: {
       type: String,
@@ -215,7 +214,7 @@ const SubscriptionSchema = new Schema<ISubscription>(
 );
 
 // Indexes
-SubscriptionSchema.index({ outlet: 1 });
+// Note: outlet field has unique: true which already creates an index
 SubscriptionSchema.index({ status: 1 });
 SubscriptionSchema.index({ tier: 1 });
 SubscriptionSchema.index({ currentPeriodEnd: 1 });

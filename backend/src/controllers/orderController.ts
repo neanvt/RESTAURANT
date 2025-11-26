@@ -2,17 +2,19 @@ import { Request, Response } from "express";
 import { Types } from "mongoose";
 import Order from "../models/Order";
 import KOT from "../models/KOT";
-import Invoice from "../models/Invoice";
 import Item from "../models/Item";
 import Counter from "../models/Counter";
 import staffService from "../services/staffService";
 
 // Generate order number - Format: 015/25-26
 const generateOrderNumber = async (outletId: string): Promise<string> => {
+  // Get current date in local timezone
   const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, "0");
+  const day = String(today.getDate()).padStart(2, "0");
+  const dateStr = `${year}-${month}-${day}`; // YYYY-MM-DD in local time
 
-  const dateStr = today.toISOString().split("T")[0]; // YYYY-MM-DD
   const counterId = `order_${outletId}_${dateStr}`;
 
   try {
@@ -22,14 +24,14 @@ const generateOrderNumber = async (outletId: string): Promise<string> => {
 
     // Get outlet to fetch financial year
     const outlet = await require("../models/Outlet").default.findById(outletId);
-    const financialYear = outlet?.settings?.financialYearStart || "25-26";
+    const financialYear = outlet?.settings?.financialYearStart || "26-27";
 
     // Use findOneAndUpdate with upsert to atomically increment the counter
     const counter = await Counter.findOneAndUpdate(
       { _id: counterId },
       {
         $inc: { sequence: 1 },
-        $setOnInsert: { date: today },
+        $setOnInsert: { date: new Date(`${dateStr}T00:00:00.000Z`) },
       },
       {
         upsert: true,
@@ -60,10 +62,13 @@ const generateOrderNumber = async (outletId: string): Promise<string> => {
 
 // Generate KOT number - Format: KOT#04/12112025
 const generateKOTNumber = async (outletId: string): Promise<string> => {
+  // Get current date in local timezone
   const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, "0");
+  const day = String(today.getDate()).padStart(2, "0");
+  const dateStr = `${year}-${month}-${day}`; // YYYY-MM-DD in local time
 
-  const dateStr = today.toISOString().split("T")[0]; // YYYY-MM-DD
   const counterId = `kot_${outletId}_${dateStr}`;
 
   try {
@@ -76,7 +81,7 @@ const generateKOTNumber = async (outletId: string): Promise<string> => {
       { _id: counterId },
       {
         $inc: { sequence: 1 },
-        $setOnInsert: { date: today },
+        $setOnInsert: { date: new Date(`${dateStr}T00:00:00.000Z`) },
       },
       {
         upsert: true,
@@ -105,54 +110,6 @@ const generateKOTNumber = async (outletId: string): Promise<string> => {
   } catch (error: any) {
     console.error(`❌ Error generating KOT number:`, error);
     throw new Error(`Failed to generate KOT number: ${error.message}`);
-  }
-};
-
-// Generate Invoice number - Format: 018/25-26
-const generateInvoiceNumber = async (outletId: string): Promise<string> => {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  const dateStr = today.toISOString().split("T")[0]; // YYYY-MM-DD
-  const counterId = `invoice_${outletId}_${dateStr}`;
-
-  try {
-    console.log(
-      `🔄 Generating invoice number for outlet ${outletId} on ${dateStr}`
-    );
-
-    // Get outlet to fetch financial year
-    const outlet = await require("../models/Outlet").default.findById(outletId);
-    const financialYear = outlet?.settings?.financialYearStart || "25-26";
-
-    // Use findOneAndUpdate with upsert to atomically increment the counter
-    const counter = await Counter.findOneAndUpdate(
-      { _id: counterId },
-      {
-        $inc: { sequence: 1 },
-        $setOnInsert: { date: today },
-      },
-      {
-        upsert: true,
-        new: true,
-        setDefaultsOnInsert: true,
-      }
-    );
-
-    if (!counter) {
-      throw new Error("Failed to generate invoice counter");
-    }
-
-    // Format: 018/25-26
-    const formattedNumber = `${counter.sequence
-      .toString()
-      .padStart(3, "0")}/${financialYear}`;
-
-    console.log(`✅ Generated invoice number: ${formattedNumber}`);
-    return formattedNumber;
-  } catch (error: any) {
-    console.error(`❌ Error generating invoice number:`, error);
-    throw new Error(`Failed to generate invoice number: ${error.message}`);
   }
 };
 
@@ -582,10 +539,13 @@ export const generateKOT = async (
       return;
     }
 
-    if (order.status !== "draft") {
+    if (order.status !== "draft" && order.status !== "kot_generated") {
       res.status(400).json({
         success: false,
-        error: { message: "KOT can only be generated for draft orders" },
+        error: {
+          message:
+            "KOT can only be generated for draft or kot_generated orders",
+        },
       });
       return;
     }
@@ -641,62 +601,8 @@ export const generateKOT = async (
       throw lastKotError || new Error("Failed to create KOT after retries");
     }
 
-    // Generate Invoice number and create invoice with retry logic
-    let invoice;
-    let invoiceNumber: string = "";
-    let invoiceRetries = 3;
-    let lastInvoiceError;
-
-    while (invoiceRetries > 0) {
-      try {
-        invoiceNumber = await generateInvoiceNumber(outletId.toString());
-
-        invoice = await Invoice.create({
-          outletId,
-          orderId: order._id,
-          invoiceNumber,
-          items: order.items,
-          subtotal: order.subtotal,
-          taxAmount: order.taxAmount,
-          total: order.total,
-          customer: order.customer,
-          paymentMethod: "cash", // Default payment method
-          paymentStatus: "pending",
-          paidAmount: 0,
-          notes: order.notes,
-          createdBy: req.user!.userId,
-        });
-
-        break; // Success
-      } catch (error: any) {
-        lastInvoiceError = error;
-
-        if (error.code === 11000 && error.message.includes("invoiceNumber")) {
-          invoiceRetries--;
-          console.log(
-            `Duplicate invoice number, retrying... (${invoiceRetries} left)`
-          );
-
-          if (invoiceRetries > 0) {
-            await new Promise((resolve) =>
-              setTimeout(resolve, 100 * (4 - invoiceRetries))
-            );
-            continue;
-          }
-        }
-
-        throw error;
-      }
-    }
-
-    if (!invoice) {
-      throw (
-        lastInvoiceError || new Error("Failed to create invoice after retries")
-      );
-    }
-
-    // Update order status to completed
-    order.status = "completed";
+    // Update order status to kot_generated (don't complete it yet)
+    order.status = "kot_generated";
     order.kotId = kot._id as Types.ObjectId;
     await order.save();
 
@@ -713,7 +619,7 @@ export const generateKOT = async (
 
     res.json({
       success: true,
-      data: { order, kot, invoice },
+      data: { order, kot },
     });
   } catch (error: any) {
     console.error("❌ KOT generation error:", error);

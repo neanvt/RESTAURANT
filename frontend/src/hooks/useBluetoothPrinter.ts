@@ -9,7 +9,7 @@ export function useBluetoothPrinter() {
   const [isConnecting, setIsConnecting] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
 
-  // Auto-reconnect on mount
+  // Auto-reconnect on mount and background reconnection
   useEffect(() => {
     const tryAutoConnect = async () => {
       if (bluetoothPrinter.isSupported() && !bluetoothPrinter.isConnected()) {
@@ -20,7 +20,50 @@ export function useBluetoothPrinter() {
         }
       }
     };
+
+    // Initial connection attempt
     tryAutoConnect();
+
+    // Background reconnection with exponential backoff
+    let retryTimeout: NodeJS.Timeout;
+    let retryCount = 0;
+    const maxRetries = 5;
+    const baseDelay = 1000; // 1 second
+
+    const backgroundReconnect = () => {
+      if (bluetoothPrinter.isSupported() && !bluetoothPrinter.isConnected() && retryCount < maxRetries) {
+        const delay = Math.min(baseDelay * Math.pow(2, retryCount), 16000); // Cap at 16 seconds
+        retryTimeout = setTimeout(async () => {
+          try {
+            const connected = await bluetoothPrinter.autoDiscoverAndConnect();
+            if (connected) {
+              setIsConnected(true);
+              console.log(`✅ Background reconnection successful (attempt ${retryCount + 1})`);
+              retryCount = 0; // Reset on success
+            } else {
+              retryCount++;
+              backgroundReconnect(); // Try again
+            }
+          } catch (error) {
+            retryCount++;
+            console.log(`❌ Background reconnection failed (attempt ${retryCount}):`, error);
+            backgroundReconnect(); // Try again
+          }
+        }, delay);
+      }
+    };
+
+    // Start background reconnection after initial attempt
+    const backgroundInterval = setInterval(() => {
+      if (!bluetoothPrinter.isConnected()) {
+        backgroundReconnect();
+      }
+    }, 15000); // Check every 15 seconds
+
+    return () => {
+      if (retryTimeout) clearTimeout(retryTimeout);
+      if (backgroundInterval) clearInterval(backgroundInterval);
+    };
   }, []);
 
   /**
@@ -39,8 +82,8 @@ export function useBluetoothPrinter() {
 
     setIsConnecting(true);
     try {
-      // Use the enhanced smart connect method
-      const connected = await bluetoothPrinter.smartConnect();
+      // Use the enhanced auto-discover and connect method
+      const connected = await bluetoothPrinter.autoDiscoverAndConnect();
       if (connected) {
         setIsConnected(true);
         console.log("✅ Successfully connected to Bluetooth printer");

@@ -54,6 +54,52 @@ export const getItems = async (req: Request, res: Response): Promise<void> => {
 };
 
 /**
+ * Get all items with popularity sorting
+ */
+export const getItemsWithPopularity = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const outletId = req.outletId;
+
+    if (!outletId) {
+      res.status(400).json({
+        success: false,
+        error: {
+          code: "NO_OUTLET",
+          message: "No outlet selected",
+        },
+      });
+      return;
+    }
+
+    const { category, isFavourite, isAvailable, search } = req.query;
+
+    const filters = {
+      outletId,
+      category: category as string,
+      isFavourite: isFavourite === "true" ? true : undefined,
+      isAvailable: isAvailable === "true" ? true : undefined,
+      search: search as string,
+    };
+
+    const items = await itemService.getItemsWithPopularity(filters);
+
+    res.json({
+      success: true,
+      data: items,
+    });
+  } catch (error: any) {
+    logger.error("Get items with popularity error:", error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: "FETCH_ERROR",
+        message: error.message || "Failed to fetch items with popularity",
+      },
+    });
+  }
+};
+
+/**
  * Get item by ID
  */
 export const getItemById = async (

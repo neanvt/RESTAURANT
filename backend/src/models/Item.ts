@@ -34,7 +34,6 @@ const itemSchema = new Schema<IItem>(
       type: Schema.Types.ObjectId,
       ref: "Outlet",
       required: [true, "Outlet ID is required"],
-      index: true,
     },
     name: {
       type: String,

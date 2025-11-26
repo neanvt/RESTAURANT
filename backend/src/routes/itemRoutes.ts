@@ -1,6 +1,7 @@
 import { Router } from "express";
 import {
   getItems,
+  getItemsWithPopularity,
   getItemById,
   createItem,
   updateItem,
@@ -27,6 +28,14 @@ router.use(attachCurrentOutlet);
  * @query   category, isFavourite, isAvailable, search
  */
 router.get("/", getItems);
+
+/**
+ * @route   GET /api/items/with-popularity
+ * @desc    Get all items sorted by order popularity (today/7days/30days) then alphabetically
+ * @access  Private
+ * @query   category, isFavourite, isAvailable, search
+ */
+router.get("/with-popularity", getItemsWithPopularity);
 
 /**
  * @route   GET /api/items/low-stock

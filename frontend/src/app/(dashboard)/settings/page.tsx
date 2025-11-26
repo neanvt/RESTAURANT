@@ -7,6 +7,7 @@ import {
   Share2,
   Bell,
   User,
+  Printer,
   ChevronRight,
   Settings as SettingsIcon,
   ChevronLeft,
@@ -23,6 +24,13 @@ export default function SettingsPage() {
       description: "Name, logo, address, GST, UPI details",
       path: "/settings/business",
       color: "bg-blue-100 text-blue-600",
+    },
+    {
+      icon: Printer,
+      label: "Printer Settings",
+      description: "Configure thermal printer connection",
+      path: "/settings/printer",
+      color: "bg-orange-100 text-orange-600",
     },
     {
       icon: Clock,

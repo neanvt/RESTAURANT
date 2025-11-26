@@ -151,6 +151,7 @@ export default function OutletsPage() {
                           src={getFullImageUrl(outlet.logo)!}
                           alt={outlet.businessName}
                           fill
+                          sizes="64px"
                           className="object-cover"
                         />
                       </div>

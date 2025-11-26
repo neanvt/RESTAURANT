@@ -17,7 +17,7 @@ export default function InstallPWA() {
   const [isStandalone, setIsStandalone] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const [canShowInstallPrompt, setCanShowInstallPrompt] = useState(false);
-  
+
   // Session-based dismissal - use sessionStorage instead of localStorage
   // This will reset on app restart but persist across page navigation
   const [sessionDismissed, setSessionDismissed] = useState(false);
@@ -37,7 +37,9 @@ export default function InstallPWA() {
     }
 
     // Check if already dismissed in this session
-    const sessionDismissalFlag = sessionStorage.getItem("pwa-install-dismissed-session");
+    const sessionDismissalFlag = sessionStorage.getItem(
+      "pwa-install-dismissed-session"
+    );
     if (sessionDismissalFlag) {
       console.log("🚫 Install banner already dismissed in this session");
       setSessionDismissed(true);
@@ -78,11 +80,15 @@ export default function InstallPWA() {
       // Show again after 7 days
       if (daysSinceDismissal < 7) {
         console.log(
-          `⏰ Install prompt permanently dismissed ${daysSinceDismissal.toFixed(1)} days ago, showing again after 7 days`
+          `⏰ Install prompt permanently dismissed ${daysSinceDismissal.toFixed(
+            1
+          )} days ago, showing again after 7 days`
         );
         return;
       } else {
-        console.log("♻️ Clearing old permanent dismissal, will show prompt again");
+        console.log(
+          "♻️ Clearing old permanent dismissal, will show prompt again"
+        );
         localStorage.removeItem("pwa-install-dismissed");
       }
     }
@@ -164,12 +170,12 @@ export default function InstallPWA() {
   const handleDismiss = (permanent = false) => {
     setShowInstallBanner(false);
     setSessionDismissed(true);
-    
+
     if (typeof sessionStorage !== "undefined") {
       // Always set session dismissal (prevents showing again during this session)
       sessionStorage.setItem("pwa-install-dismissed-session", "true");
     }
-    
+
     if (permanent && typeof localStorage !== "undefined") {
       // Set permanent dismissal (7 days)
       localStorage.setItem("pwa-install-dismissed", Date.now().toString());

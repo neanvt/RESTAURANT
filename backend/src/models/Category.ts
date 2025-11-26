@@ -16,7 +16,6 @@ const categorySchema = new Schema<ICategory>(
       type: Schema.Types.ObjectId,
       ref: "Outlet",
       required: [true, "Outlet ID is required"],
-      index: true,
     },
     name: {
       type: String,

@@ -33,6 +33,20 @@ export const itemsApi = {
     return response.data.data;
   },
 
+  // Get all items sorted by popularity (order frequency)
+  getAllWithPopularity: async (filters?: ItemFilters): Promise<Item[]> => {
+    const params = new URLSearchParams();
+    if (filters?.category) params.append("category", filters.category);
+    if (filters?.isFavourite !== undefined)
+      params.append("isFavourite", String(filters.isFavourite));
+    if (filters?.isAvailable !== undefined)
+      params.append("isAvailable", String(filters.isAvailable));
+    if (filters?.search) params.append("search", filters.search);
+
+    const response = await api.get(`/items/with-popularity?${params.toString()}`);
+    return response.data.data;
+  },
+
   // Get item by ID
   getById: async (id: string): Promise<Item> => {
     const response = await api.get(`/items/${id}`);

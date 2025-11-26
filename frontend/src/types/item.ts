@@ -50,9 +50,11 @@ export interface CreateItemDTO {
 export interface UpdateItemDTO extends Partial<CreateItemDTO> {}
 
 export interface ItemFilters {
+  outletId?: string;
   category?: string;
   isFavourite?: boolean;
   isAvailable?: boolean;
+  isActive?: boolean;
   search?: string;
 }
 

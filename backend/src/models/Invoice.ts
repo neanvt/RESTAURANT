@@ -60,13 +60,11 @@ const InvoiceSchema = new Schema<IInvoice>(
       type: Schema.Types.ObjectId,
       ref: "Outlet",
       required: true,
-      index: true,
     },
     orderId: {
       type: Schema.Types.ObjectId,
       ref: "Order",
       required: true,
-      index: true,
     },
     invoiceNumber: { type: String, required: true },
     items: [InvoiceItemSchema],

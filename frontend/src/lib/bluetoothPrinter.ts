@@ -139,6 +139,12 @@ class BluetoothPrinterService {
     if (!saved) return false;
 
     try {
+      // Check if Web Bluetooth API is available
+      if (!navigator.bluetooth || !navigator.bluetooth.getDevices) {
+        console.log("Web Bluetooth API not available for auto-reconnect");
+        return false;
+      }
+
       // Try to get the device from bluetooth devices
       const devices = await navigator.bluetooth.getDevices();
       const device = devices.find((d: any) => d.id === saved.id);
@@ -170,32 +176,81 @@ class BluetoothPrinterService {
    */
   async autoDiscoverAndConnect(): Promise<boolean> {
     if (!this.isSupported()) {
-      throw new Error("Web Bluetooth is not supported on this device.");
+      console.log("Web Bluetooth is not supported on this device.");
+      return false;
     }
 
-    // First try auto-reconnect
+    // First try auto-reconnect to saved device
     const reconnected = await this.autoReconnect();
     if (reconnected) return true;
 
-    // Try to get already paired devices and connect to printers automatically
+    // Strategy 1: Try to get already paired devices (if API is available)
+    if (navigator.bluetooth && typeof navigator.bluetooth.getDevices === 'function') {
+      try {
+        const pairedConnected = await this.connectToPairedDevices();
+        if (pairedConnected) return true;
+      } catch (error) {
+        console.log("Paired devices connection failed:", error);
+      }
+    }
+
+    // Strategy 2: Try silent connection with common printer services
     try {
+      const silentConnected = await this.attemptSilentConnection();
+      if (silentConnected) return true;
+    } catch (error) {
+      console.log("Silent connection failed:", error);
+    }
+
+    console.log("All auto-connection strategies failed");
+    return false;
+  }
+
+  /**
+   * Strategy 1: Connect to already paired devices
+   */
+  private async connectToPairedDevices(): Promise<boolean> {
+    try {
+
       const devices = await navigator.bluetooth.getDevices();
-      
+      console.log(`Found ${devices.length} paired Bluetooth devices`);
+
       for (const device of devices) {
         // Look for printer-like devices
         if (device.name && this.isPrinterDevice(device.name)) {
+          console.log(`Attempting to connect to potential printer: ${device.name}`);
           try {
+            if (!device.gatt) {
+              console.log(`Device ${device.name} has no GATT interface`);
+              continue;
+            }
+
             this.device = device;
-            const server = await device.gatt?.connect();
-            if (server) {
+            const server = await device.gatt.connect();
+            
+            try {
               const service = await server.getPrimaryService(this.SERVICE_UUID);
-              this.characteristic = await service.getCharacteristic(this.CHARACTERISTIC_UUID);
-              
+              this.characteristic = await service.getCharacteristic(
+                this.CHARACTERISTIC_UUID
+              );
+
               // Save this device for future auto-reconnect
               this.saveDevice(device.id, device.name);
-              
-              console.log("✅ Auto-connected to discovered printer:", device.name);
+
+              console.log(
+                "✅ Auto-connected to discovered printer:",
+                device.name
+              );
               return true;
+            } catch (serviceError) {
+              console.log(`Service/characteristic error for ${device.name}:`, serviceError);
+              // Try to disconnect if we connected but couldn't get service
+              try {
+                server.disconnect();
+              } catch (e) {
+                // Ignore disconnect errors
+              }
+              continue;
             }
           } catch (error) {
             console.log("Failed to connect to device:", device.name, error);
@@ -203,6 +258,8 @@ class BluetoothPrinterService {
           }
         }
       }
+      
+      console.log("No compatible printers found in paired devices");
     } catch (error) {
       console.log("Failed to get paired devices:", error);
     }
@@ -215,13 +272,72 @@ class BluetoothPrinterService {
    */
   private isPrinterDevice(name: string): boolean {
     const printerKeywords = [
-      'printer', 'pos', 'thermal', 'receipt', 'bluetooth printer',
-      'rpp', 'mtp', 'shreyans', 'sc588', 'zj', 'epson', 'star',
-      'xprinter', 'gprinter', 'bixolon', 'citizen'
+      "printer",
+      "pos",
+      "thermal",
+      "receipt",
+      "bluetooth printer",
+      "rpp",
+      "mtp",
+      "shreyans",
+      "sc588",
+      "zj",
+      "epson",
+      "star",
+      "xprinter",
+      "gprinter",
+      "bixolon",
+      "citizen",
+      "goojprt",
+      "munbyn",
+      "milestone",
+      "print",
+      "58mm",
+      "80mm"
     ];
-    
+
     const lowerName = name.toLowerCase();
-    return printerKeywords.some(keyword => lowerName.includes(keyword));
+    const isMatch = printerKeywords.some((keyword) => lowerName.includes(keyword));
+    
+    if (isMatch) {
+      console.log(`Device '${name}' identified as potential printer`);
+    }
+    
+    return isMatch;
+  }
+
+  /**
+   * Strategy 2: Attempt silent connection with common printer services
+   * This tries to connect without showing the device selection dialog when possible
+   */
+  private async attemptSilentConnection(): Promise<boolean> {
+    // Check if we can attempt background discovery
+    if (!navigator.bluetooth) {
+      console.log("Bluetooth not available for silent connection");
+      return false;
+    }
+
+    try {
+      // Try to get availability first
+      const available = await navigator.bluetooth.getAvailability();
+      if (!available) {
+        console.log("Bluetooth not available on device");
+        return false;
+      }
+
+      // Attempt to connect using watchAdvertisements if available
+      // This is a more advanced approach for newer Chrome versions
+      console.log("Attempting silent connection via advertisement watching...");
+      
+      // For now, we'll return false as true silent connection 
+      // requires the device to be pre-paired or use experimental APIs
+      console.log("Silent connection not available - requires user interaction for security");
+      return false;
+      
+    } catch (error) {
+      console.log("Silent connection attempt failed:", error);
+      return false;
+    }
   }
 
   /**
@@ -232,13 +348,8 @@ class BluetoothPrinterService {
     const autoConnected = await this.autoDiscoverAndConnect();
     if (autoConnected) return true;
 
-    // Fall back to manual device selection
-    try {
-      await this.connect();
-      return true;
-    } catch (error) {
-      return false;
-    }
+    // Don't fall back to manual connection - let user manually trigger it
+    return false;
   }
 
   /**
@@ -247,8 +358,24 @@ class BluetoothPrinterService {
   async connect(): Promise<void> {
     if (!this.isSupported()) {
       throw new Error(
-        "Web Bluetooth is not supported on this device. Please use Chrome on Android."
+        "Web Bluetooth is not supported or is disabled. Please enable Web Bluetooth in your browser settings or use Chrome on Android/Windows."
       );
+    }
+
+    // Additional check for globally disabled API
+    try {
+      if (navigator.bluetooth && navigator.bluetooth.getAvailability) {
+        await navigator.bluetooth.getAvailability();
+      }
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        error.message.includes("globally disabled")
+      ) {
+        throw new Error(
+          "Web Bluetooth API is globally disabled. Please enable it in chrome://flags/#enable-web-bluetooth or use a supported browser."
+        );
+      }
     }
 
     try {
@@ -673,13 +800,13 @@ class BluetoothPrinterService {
     }
 
     await this.write("Time: " + kot.date + "\n");
-    
+
     if (kot.isHold) {
       await this.write(Commands.BOLD_ON);
       await this.write("Status: ON HOLD\n");
       await this.write(Commands.BOLD_OFF);
     }
-    
+
     await this.write("================================\n");
 
     // Items header

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, Suspense } from "react";
+import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   Plus,
@@ -32,7 +32,6 @@ import { toast } from "sonner";
 import Image from "next/image";
 import { getFullImageUrl } from "@/lib/imageUtils";
 import { useBluetoothPrinter } from "@/hooks/useBluetoothPrinter";
-import { OrderResumeHandler } from "@/components/orders/OrderResumeHandler";
 import KOTPreview from "@/components/orders/KOTPreview";
 import InvoicePreview from "@/components/orders/InvoicePreview";
 import api from "@/lib/api/axios-config";
@@ -43,11 +42,12 @@ interface CartItem extends Item {
   notes?: string;
 }
 
-function CreateOrderPageContent() {
+export default function CreateOrderPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { items, filters, fetchItems, setFilters } = useItemStore();
-  const { createOrder, generateKOT, holdOrder, getOrderById, resumeOrder } = useOrderStore();
+  const { items, filters, fetchItemsWithPopularity, setFilters } = useItemStore();
+  const { createOrder, generateKOT, holdOrder, getOrderById, resumeOrder } =
+    useOrderStore();
   const { categories, fetchCategories } = useCategoryStore();
   const { currentOutlet, fetchCurrentOutlet } = useOutletStore();
 
@@ -72,6 +72,7 @@ function CreateOrderPageContent() {
   const [showBillSummary, setShowBillSummary] = useState(false);
 
   // Preview states
+  const [hasLoadedHeldOrder, setHasLoadedHeldOrder] = useState(false);
   const [showKOTPreview, setShowKOTPreview] = useState(false);
   const [showInvoicePreview, setShowInvoicePreview] = useState(false);
   const [currentOrder, setCurrentOrder] = useState<any>(null);
@@ -82,11 +83,95 @@ function CreateOrderPageContent() {
   useEffect(() => {
     const loadData = async () => {
       await fetchCategories();
-      await fetchItems();
+      await fetchItemsWithPopularity();
       await fetchCurrentOutlet();
     };
     loadData();
   }, []);
+
+  // Handle order resume logic
+  useEffect(() => {
+    const resumeOrderId = searchParams.get("resumeOrderId");
+
+    if (resumeOrderId && items.length > 0 && !hasLoadedHeldOrder) {
+      const loadHeldOrder = async () => {
+        try {
+          setHasLoadedHeldOrder(true);
+          const heldOrder = await getOrderById(resumeOrderId);
+          console.log("Loading held order:", heldOrder);
+
+          // Populate form with held order data
+          if (heldOrder.customer?.name) {
+            setCustomerName(heldOrder.customer.name);
+          }
+          if (heldOrder.customer?.phone) {
+            setCustomerPhone(heldOrder.customer.phone);
+          }
+          if (heldOrder.tableNumber) {
+            setTableNumber(heldOrder.tableNumber);
+          }
+          if (heldOrder.notes) {
+            setOrderNotes(heldOrder.notes);
+          }
+
+          // Populate cart with order items
+          if (heldOrder.items && heldOrder.items.length > 0) {
+            const cartItems: CartItem[] = [];
+
+            for (const orderItem of heldOrder.items) {
+              // Find the corresponding menu item by ID
+              const menuItem = items.find((item) => item.id === orderItem.item);
+
+              if (menuItem) {
+                cartItems.push({
+                  ...menuItem,
+                  cartQuantity: orderItem.quantity,
+                  notes: orderItem.notes,
+                });
+              } else {
+                // Create temporary item if not found
+                const tempItem = {
+                  id: orderItem.item || `temp-${Date.now()}`,
+                  outletId: currentOutlet?._id || "",
+                  name: orderItem.name || "Unknown Item",
+                  price: orderItem.price || 0,
+                  category: "",
+                  description: "",
+                  image: { isAiGenerated: false },
+                  tax: {
+                    isApplicable: false,
+                    rate: 0,
+                    type: "percentage" as const,
+                  },
+                  isFavourite: false,
+                  isAvailable: true,
+                  isActive: true,
+                  inventory: {
+                    trackInventory: false,
+                    currentStock: 0,
+                    lowStockAlert: 0,
+                  },
+                  cartQuantity: orderItem.quantity,
+                  notes: orderItem.notes,
+                  createdAt: new Date().toISOString(),
+                  updatedAt: new Date().toISOString(),
+                } as CartItem;
+                cartItems.push(tempItem);
+              }
+            }
+
+            setCart(cartItems);
+            toast.success(`Loaded held order with ${cartItems.length} items`);
+          }
+        } catch (error: any) {
+          console.error("Failed to load held order:", error);
+          toast.error("Failed to load held order: " + error.message);
+        }
+      };
+
+      loadHeldOrder();
+    }
+  }, [searchParams, getOrderById, currentOutlet, hasLoadedHeldOrder]);
 
   const handleCategorySelect = (categoryId: string | null) => {
     setShowFavourite(false);
@@ -166,7 +251,7 @@ function CreateOrderPageContent() {
       setIsProcessing(true);
 
       // Check if we're resuming a held order
-      const resumeOrderId = searchParams.get('resumeOrderId');
+      const resumeOrderId = searchParams.get("resumeOrderId");
       let orderId: string;
       let order: any;
 
@@ -196,7 +281,7 @@ function CreateOrderPageContent() {
 
         order = await createOrder(orderData);
         orderId = order?.id || order?._id;
-        
+
         console.log("Order created - full response:", order);
         console.log("Order ID:", order?.id);
         console.log("Order _id:", order?._id);
@@ -230,7 +315,11 @@ function CreateOrderPageContent() {
           const invoice = await invoiceAPI.createInvoice(invoiceData);
           console.log("Invoice created:", invoice);
 
-          // Mark invoice as paid
+          // Mark invoice as paid - use invoice._id
+          if (!invoice._id) {
+            throw new Error("Invoice created but ID is missing");
+          }
+
           await invoiceAPI.updatePaymentStatus(invoice._id, {
             paymentStatus: "paid" as const,
           });
@@ -270,15 +359,15 @@ function CreateOrderPageContent() {
           try {
             await printBluetoothKOT(kotData);
             console.log("✅ KOT printed via Bluetooth");
-            const message = resumeOrderId ? 
-              "Order resumed and completed! KOT sent to printer and invoice marked as paid." :
-              "Order completed! KOT sent to printer and invoice marked as paid.";
+            const message = resumeOrderId
+              ? "Order resumed and completed! KOT sent to printer and invoice marked as paid."
+              : "Order completed! KOT sent to printer and invoice marked as paid.";
             toast.success(message);
           } catch (err) {
             console.error("Bluetooth print error:", err);
-            const message = resumeOrderId ? 
-              "Order resumed and completed but printer failed. Check connection." :
-              "Order completed but printer failed. Check connection.";
+            const message = resumeOrderId
+              ? "Order resumed and completed but printer failed. Check connection."
+              : "Order completed but printer failed. Check connection.";
             toast.error(message);
             // Fallback to server printing
             api.post(`/kots/${kotId}/print`).catch((e: unknown) => {
@@ -291,16 +380,16 @@ function CreateOrderPageContent() {
             .post(`/kots/${kotId}/print`)
             .then(() => {
               console.log("KOT sent to server printer");
-              const message = resumeOrderId ? 
-                "Order resumed and completed! KOT sent to printer and invoice marked as paid." :
-                "Order completed! KOT sent to printer and invoice marked as paid.";
+              const message = resumeOrderId
+                ? "Order resumed and completed! KOT sent to printer and invoice marked as paid."
+                : "Order completed! KOT sent to printer and invoice marked as paid.";
               toast.success(message);
             })
             .catch((err: unknown) => {
               console.error("Print error:", err);
-              const message = resumeOrderId ? 
-                "Order resumed and completed! Invoice marked as paid." :
-                "Order completed! Invoice marked as paid.";
+              const message = resumeOrderId
+                ? "Order resumed and completed! Invoice marked as paid."
+                : "Order completed! Invoice marked as paid.";
               toast.success(message);
             });
         }
@@ -309,7 +398,7 @@ function CreateOrderPageContent() {
         setCurrentOrder(order);
         setCurrentKOT(result.kot);
         setShowKOTPreview(true);
-        
+
         // Clear cart and reset form after successful order completion
         setCart([]);
         setCustomerName("");
@@ -377,9 +466,9 @@ function CreateOrderPageContent() {
 
         // Now hold the order
         await holdOrder(orderId);
-        const message = resumeOrderId ? 
-          "Resumed order held again successfully. KOT printed for kitchen reference." :
-          "Order held successfully. KOT printed for kitchen reference.";
+        const message = resumeOrderId
+          ? "Resumed order held again successfully. KOT printed for kitchen reference."
+          : "Order held successfully. KOT printed for kitchen reference.";
         toast.success(message);
         router.push("/orders");
       }
@@ -561,16 +650,6 @@ function CreateOrderPageContent() {
 
   return (
     <div className="h-screen bg-gray-50 flex flex-col overflow-hidden">
-      {/* Order Resume Handler */}
-      <OrderResumeHandler
-        items={items}
-        setCart={setCart}
-        setCustomerName={setCustomerName}
-        setCustomerPhone={setCustomerPhone}
-        setTableNumber={setTableNumber}
-        setOrderNotes={setOrderNotes}
-      />
-      
       {/* Header - Fixed */}
       <div className="bg-white border-b z-10 flex-shrink-0">
         <div className="px-4 py-3">
@@ -631,7 +710,7 @@ function CreateOrderPageContent() {
         {/* Items Grid */}
         <div className="px-4 pb-4">
           <div className="grid grid-cols-2 gap-3">
-            {filteredItems.map((item) => {
+            {filteredItems.map((item, index) => {
               const inCart = cart.find((i) => i.id === item.id);
 
               return (
@@ -647,6 +726,7 @@ function CreateOrderPageContent() {
                         alt={item.name}
                         fill
                         sizes="50vw"
+                        priority={index === 0} // Add priority to first image for LCP optimization
                         className="object-cover"
                       />
                     ) : (
@@ -870,12 +950,12 @@ function CreateOrderPageContent() {
             </div>
 
             {/* Action Buttons */}
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 gap-3">
               <Button
                 variant="outline"
                 onClick={() => handleCreateOrder("kot")}
                 disabled={isProcessing}
-                className="h-9 text-xs font-semibold"
+                className="h-10 text-sm font-semibold w-full"
                 title="Print KOT for kitchen"
               >
                 {isProcessing ? "..." : "KOT"}
@@ -884,7 +964,7 @@ function CreateOrderPageContent() {
                 variant="outline"
                 onClick={() => handleCreateOrder("hold")}
                 disabled={isProcessing}
-                className="h-9 text-xs font-semibold"
+                className="h-10 text-sm font-semibold w-full"
                 title="Hold order for later"
               >
                 {isProcessing ? "..." : "HOLD"}
@@ -920,13 +1000,5 @@ function CreateOrderPageContent() {
           />
         )}
     </div>
-  );
-}
-
-export default function CreateOrderPage() {
-  return (
-    <Suspense fallback={<div className="h-screen flex items-center justify-center">Loading...</div>}>
-      <CreateOrderPageContent />
-    </Suspense>
   );
 }

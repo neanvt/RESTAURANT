@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useBluetoothPrinter } from "@/hooks/useBluetoothPrinter";
+import { BluetoothNotSupported } from "@/components/BluetoothNotSupported";
 import {
   Bluetooth,
   BluetoothConnected,
@@ -61,25 +62,19 @@ export default function PrinterSettingsPage() {
 
       {/* Browser Support Warning */}
       {!isSupported && (
-        <Card className="border-yellow-500 bg-yellow-50">
+        <Card className="border-red-200 bg-red-50">
           <CardContent className="pt-6">
             <div className="flex items-start gap-3">
-              <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5" />
-              <div>
-                <h3 className="font-semibold text-yellow-900">
-                  Bluetooth Not Supported
+              <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />
+              <div className="flex-1">
+                <h3 className="font-semibold text-red-900">
+                  Bluetooth Not Available
                 </h3>
-                <p className="text-sm text-yellow-800 mt-1">
-                  Web Bluetooth is not available on this device. Please use{" "}
-                  <strong>Chrome browser on Android</strong> to enable Bluetooth
-                  printing.
+                <p className="text-sm text-red-800 mt-1 mb-4">
+                  Web Bluetooth is not supported or has been disabled in your
+                  browser.
                 </p>
-                <div className="flex gap-2 mt-3">
-                  <Smartphone className="h-4 w-4 text-yellow-700" />
-                  <span className="text-xs text-yellow-700">
-                    Android device required
-                  </span>
-                </div>
+                <BluetoothNotSupported />
               </div>
             </div>
           </CardContent>

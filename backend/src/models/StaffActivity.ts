@@ -33,7 +33,6 @@ const StaffActivitySchema: Schema = new Schema(
       type: Schema.Types.ObjectId,
       ref: "Outlet",
       required: true,
-      index: true,
     },
     action: {
       type: String,

@@ -514,6 +514,160 @@ class ItemService {
       throw new Error("Failed to fetch items by category");
     }
   }
+
+  /**
+   * Get items with popularity data (sorted by order frequency)
+   */
+  async getItemsWithPopularity(filters: ItemFilters): Promise<IItem[]> {
+    try {
+      // Build base query for items
+      const query: any = {
+        outletId: new mongoose.Types.ObjectId(filters.outletId),
+        isActive: filters.isActive !== undefined ? filters.isActive : true,
+      };
+
+      if (filters.category) {
+        query.category = new mongoose.Types.ObjectId(filters.category);
+      }
+
+      if (filters.isFavourite !== undefined) {
+        query.isFavourite = filters.isFavourite;
+      }
+
+      if (filters.isAvailable !== undefined) {
+        query.isAvailable = filters.isAvailable;
+      }
+
+      if (filters.search) {
+        query.$text = { $search: filters.search };
+      }
+
+      // Calculate date ranges for popularity
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const last7Days = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+      const last30Days = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+      // Get items with popularity data using aggregation pipeline
+      const itemsWithPopularity = await Item.aggregate([
+        { $match: query },
+        {
+          $lookup: {
+            from: 'orders',
+            let: { itemId: '$_id', outletId: '$outletId' },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ['$outletId', '$$outletId'] },
+                      { $in: ['$$itemId', '$items.item'] },
+                      { $gte: ['$createdAt', last30Days] },
+                      { $ne: ['$status', 'cancelled'] }
+                    ]
+                  }
+                }
+              },
+              { $unwind: '$items' },
+              {
+                $match: {
+                  $expr: { $eq: ['$items.item', '$$itemId'] }
+                }
+              },
+              {
+                $group: {
+                  _id: null,
+                  todayCount: {
+                    $sum: {
+                      $cond: [
+                        { $gte: ['$createdAt', today] },
+                        '$items.quantity',
+                        0
+                      ]
+                    }
+                  },
+                  last7DaysCount: {
+                    $sum: {
+                      $cond: [
+                        { $gte: ['$createdAt', last7Days] },
+                        '$items.quantity',
+                        0
+                      ]
+                    }
+                  },
+                  last30DaysCount: {
+                    $sum: '$items.quantity'
+                  }
+                }
+              }
+            ],
+            as: 'popularity'
+          }
+        },
+        {
+          $addFields: {
+            popularityData: {
+              $ifNull: [{ $arrayElemAt: ['$popularity', 0] }, {
+                todayCount: 0,
+                last7DaysCount: 0,
+                last30DaysCount: 0
+              }]
+            }
+          }
+        },
+        {
+          $addFields: {
+            todayCount: '$popularityData.todayCount',
+            last7DaysCount: '$popularityData.last7DaysCount',
+            last30DaysCount: '$popularityData.last30DaysCount',
+            // Create a composite sort score: today * 1000 + last7Days * 100 + last30Days * 10
+            popularityScore: {
+              $add: [
+                { $multiply: ['$popularityData.todayCount', 1000] },
+                { $multiply: ['$popularityData.last7DaysCount', 100] },
+                { $multiply: ['$popularityData.last30DaysCount', 10] }
+              ]
+            }
+          }
+        },
+        {
+          $lookup: {
+            from: 'categories',
+            localField: 'category',
+            foreignField: '_id',
+            as: 'category'
+          }
+        },
+        {
+          $unwind: {
+            path: '$category',
+            preserveNullAndEmptyArrays: true
+          }
+        },
+        {
+          $sort: {
+            popularityScore: -1,  // Higher popularity first
+            name: 1              // Then alphabetical
+          }
+        },
+        {
+          $project: {
+            popularity: 0,
+            popularityData: 0,
+            popularityScore: 0
+          }
+        }
+      ]);
+
+      logger.info(`Fetched ${itemsWithPopularity.length} items with popularity data`);
+      
+      return itemsWithPopularity as IItem[];
+    } catch (error: any) {
+      logger.error("Error fetching items with popularity:", error);
+      // Fallback to regular items fetch if popularity calculation fails
+      return this.getItems(filters);
+    }
+  }
 }
 
 export default new ItemService();

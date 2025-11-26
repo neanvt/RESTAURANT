@@ -23,13 +23,11 @@ const ExpenseSchema: Schema = new Schema(
       type: Schema.Types.ObjectId,
       ref: "Outlet",
       required: [true, "Outlet is required"],
-      index: true,
     },
     category: {
       type: String,
       required: [true, "Category is required"],
       trim: true,
-      index: true,
     },
     amount: {
       type: Number,

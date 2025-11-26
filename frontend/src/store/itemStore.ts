@@ -13,6 +13,7 @@ interface ItemState {
 
   // Actions
   fetchItems: (filters?: ItemFilters) => Promise<void>;
+  fetchItemsWithPopularity: (filters?: ItemFilters) => Promise<void>;
   getItemById: (id: string) => Promise<Item>;
   createItem: (data: CreateItemDTO) => Promise<Item>;
   updateItem: (id: string, data: UpdateItemDTO) => Promise<Item>;
@@ -44,12 +45,27 @@ export const useItemStore = create<ItemState>((set, get) => ({
       set({ filters });
     }
     try {
-      const items = await itemsApi.getAll(filters || get().filters);
-      set({ items, isLoading: false });
+      const currentFilters = filters || get().filters;
+      // Ensure we have required fields for the backend
+      const enhancedFilters = {
+        ...currentFilters,
+        isAvailable: currentFilters.isAvailable !== undefined ? currentFilters.isAvailable : true
+      };
+      
+      const rawItems = await itemsApi.getAll(enhancedFilters);
+      
+      // Normalize items for consistent id field
+      const normalizedItems = rawItems.map(item => ({
+        ...item,
+        id: item.id || item._id,
+        _id: undefined
+      })).filter(item => item.id);
+      
+      set({ items: normalizedItems, isLoading: false });
 
-      // Cache items for offline use
-      await cacheItems(items);
-      await cacheDataForOffline("items", items);
+      // Cache normalized items for offline use
+      await cacheItems(normalizedItems);
+      await cacheDataForOffline("items", normalizedItems);
     } catch (error: any) {
       // Try to load from cache if offline
       const cachedItems = await getCachedItems();
@@ -62,6 +78,73 @@ export const useItemStore = create<ItemState>((set, get) => ({
             error.response?.data?.error?.message || "Failed to fetch items",
           isLoading: false,
         });
+      }
+    }
+  },
+
+  fetchItemsWithPopularity: async (filters) => {
+    set({ isLoading: true, error: null });
+    if (filters) {
+      set({ filters });
+    }
+    try {
+      const currentFilters = filters || get().filters;
+      // Ensure we have required fields for the backend
+      const enhancedFilters = {
+        ...currentFilters,
+        isAvailable: currentFilters.isAvailable !== undefined ? currentFilters.isAvailable : true
+      };
+      
+      const rawItems = await itemsApi.getAllWithPopularity(enhancedFilters);
+      
+      // Normalize items to ensure consistent id field for both state and cache
+      const normalizedItems = rawItems.map(item => ({
+        ...item,
+        id: item.id || item._id, // Ensure id field exists
+        _id: undefined // Remove _id to avoid confusion
+      })).filter(item => item.id); // Only include items with valid ids
+      
+      set({ items: normalizedItems, isLoading: false });
+
+      // Cache normalized items for offline use
+      await cacheItems(normalizedItems);
+      await cacheDataForOffline("items", normalizedItems);
+    } catch (error: any) {
+      console.error("Popularity sort failed:", error);
+      console.log("Error details:", error.response?.data);
+      console.log("Popularity sort failed, falling back to regular fetch");
+      // Fallback to regular fetch if popularity sorting fails
+      try {
+        const currentFilters = filters || get().filters;
+        const enhancedFilters = {
+          ...currentFilters,
+          isAvailable: currentFilters.isAvailable !== undefined ? currentFilters.isAvailable : true
+        };
+        const rawItems = await itemsApi.getAll(enhancedFilters);
+        
+        // Normalize items for consistent id field
+        const normalizedItems = rawItems.map(item => ({
+          ...item,
+          id: item.id || item._id,
+          _id: undefined
+        })).filter(item => item.id);
+        
+        set({ items: normalizedItems, isLoading: false });
+        await cacheItems(normalizedItems);
+        await cacheDataForOffline("items", normalizedItems);
+      } catch (fallbackError: any) {
+        // Try to load from cache if offline
+        const cachedItems = await getCachedItems();
+        if (cachedItems.length > 0) {
+          set({ items: cachedItems, isLoading: false });
+          console.log("📦 Loaded items from cache (offline)");
+        } else {
+          set({
+            error:
+              fallbackError.response?.data?.error?.message || "Failed to fetch items",
+            isLoading: false,
+          });
+        }
       }
     }
   },

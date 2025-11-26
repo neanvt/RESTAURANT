@@ -24,7 +24,6 @@ const PrintJobSchema: Schema = new Schema(
       type: Schema.Types.ObjectId,
       ref: "Outlet",
       required: [true, "Outlet is required"],
-      index: true,
     },
     printer: {
       type: Schema.Types.ObjectId,

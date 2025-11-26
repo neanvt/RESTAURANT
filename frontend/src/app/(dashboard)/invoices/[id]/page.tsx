@@ -152,6 +152,7 @@ export default function InvoiceDetailPage() {
                         currentInvoice.outlet.businessName || "Business Logo"
                       }
                       fill
+                      sizes="64px"
                       className="object-cover"
                     />
                   </div>
@@ -299,6 +300,7 @@ export default function InvoiceDetailPage() {
                           src={currentInvoice.upiQRCode}
                           alt="UPI QR Code"
                           fill
+                          sizes="192px"
                           className="object-contain p-2"
                         />
                       </div>

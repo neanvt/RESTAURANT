@@ -2,10 +2,10 @@ const withPWA = require("next-pwa")({
   dest: "public",
   register: true,
   skipWaiting: true,
-  disable: false, // Enable in development for testing
-  sw: 'sw.js', // Use sw.js instead of service-worker.js
+  disable: process.env.NODE_ENV === "development", // Disable in development to avoid caching issues
+  sw: "sw.js", // Use sw.js instead of service-worker.js
   buildExcludes: [/middleware-manifest\.json$/],
-  publicExcludes: ['!robots.txt', '!sitemap.xml'],
+  publicExcludes: ["!robots.txt", "!sitemap.xml"],
   runtimeCaching: [
     {
       urlPattern: /^https:\/\/fonts\.(?:gstatic)\.com\/.*/i,

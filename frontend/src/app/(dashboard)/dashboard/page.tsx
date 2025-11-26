@@ -95,6 +95,7 @@ export default function DashboardPage() {
                 src={getFullImageUrl(currentOutlet.logo)!}
                 alt={currentOutlet.businessName}
                 fill
+                sizes="40px"
                 className="object-cover"
               />
             </div>

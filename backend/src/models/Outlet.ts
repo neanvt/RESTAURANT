@@ -71,7 +71,6 @@ const OutletSchema: Schema = new Schema(
       type: Schema.Types.ObjectId,
       ref: "User",
       required: true,
-      index: true,
     },
     businessName: {
       type: String,
@@ -278,7 +277,7 @@ const OutletSchema: Schema = new Schema(
       },
       financialYearStart: {
         type: String,
-        default: "25-26", // Default to 2025-2026
+        default: "26-27", // Default to 2026-2027
         trim: true,
       },
     },
