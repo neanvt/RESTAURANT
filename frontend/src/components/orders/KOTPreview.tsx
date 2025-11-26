@@ -9,6 +9,7 @@ interface KOTPreviewProps {
   outlet: any;
   onClose: () => void;
   onPrintBill: () => void;
+  onPrintKOT?: () => void; // Optional for backward compatibility
 }
 
 export default function KOTPreview({
@@ -17,6 +18,7 @@ export default function KOTPreview({
   outlet,
   onClose,
   onPrintBill,
+  onPrintKOT,
 }: KOTPreviewProps) {
   const formatDate = (date: string) => {
     return new Date(date).toLocaleString("en-IN", {
@@ -123,6 +125,15 @@ export default function KOTPreview({
           <Button variant="outline" onClick={onClose} className="flex-1">
             Close
           </Button>
+          {onPrintKOT && (
+            <Button
+              onClick={onPrintKOT}
+              variant="outline"
+              className="flex-1 border-orange-300 text-orange-700 hover:bg-orange-50"
+            >
+              Print KOT
+            </Button>
+          )}
           <Button
             onClick={onPrintBill}
             className="flex-1 bg-blue-600 hover:bg-blue-700"

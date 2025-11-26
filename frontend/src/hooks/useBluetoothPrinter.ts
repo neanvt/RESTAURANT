@@ -9,73 +9,47 @@ export function useBluetoothPrinter() {
   const [isConnecting, setIsConnecting] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
 
-  // Auto-reconnect on mount and background reconnection
+  // Auto-reconnect on mount and sync connection state regularly
   useEffect(() => {
-    const tryAutoConnect = async () => {
-      if (bluetoothPrinter.isSupported() && !bluetoothPrinter.isConnected()) {
-        const connected = await bluetoothPrinter.autoDiscoverAndConnect();
-        if (connected) {
-          setIsConnected(true);
-          console.log("✅ Printer auto-connected on mount");
+    const syncAndConnect = async () => {
+      // Sync actual connection state with React state
+      const actuallyConnected = bluetoothPrinter.isConnected();
+      if (actuallyConnected !== isConnected) {
+        setIsConnected(actuallyConnected);
+        console.log(`🔄 Synced connection state: ${actuallyConnected}`);
+      }
+
+      // Try auto-connection if not connected
+      if (bluetoothPrinter.isSupported() && !actuallyConnected) {
+        console.log("🔌 Attempting auto-connection...");
+        try {
+          const connected = await bluetoothPrinter.autoDiscoverAndConnect();
+          if (connected) {
+            setIsConnected(true);
+            console.log("✅ Printer auto-connected on mount");
+          }
+        } catch (error) {
+          console.log("❌ Auto-connection failed:", error);
         }
       }
     };
 
-    // Initial connection attempt
-    tryAutoConnect();
+    // Initial sync and connect
+    syncAndConnect();
 
-    // Background reconnection with exponential backoff
-    let retryTimeout: NodeJS.Timeout;
-    let retryCount = 0;
-    const maxRetries = 5;
-    const baseDelay = 1000; // 1 second
-
-    const backgroundReconnect = () => {
-      if (
-        bluetoothPrinter.isSupported() &&
-        !bluetoothPrinter.isConnected() &&
-        retryCount < maxRetries
-      ) {
-        const delay = Math.min(baseDelay * Math.pow(2, retryCount), 16000); // Cap at 16 seconds
-        retryTimeout = setTimeout(async () => {
-          try {
-            const connected = await bluetoothPrinter.autoDiscoverAndConnect();
-            if (connected) {
-              setIsConnected(true);
-              console.log(
-                `✅ Background reconnection successful (attempt ${
-                  retryCount + 1
-                })`
-              );
-              retryCount = 0; // Reset on success
-            } else {
-              retryCount++;
-              backgroundReconnect(); // Try again
-            }
-          } catch (error) {
-            retryCount++;
-            console.log(
-              `❌ Background reconnection failed (attempt ${retryCount}):`,
-              error
-            );
-            backgroundReconnect(); // Try again
-          }
-        }, delay);
+    // Regular connection monitoring
+    const connectionCheck = setInterval(() => {
+      const actuallyConnected = bluetoothPrinter.isConnected();
+      if (actuallyConnected !== isConnected) {
+        setIsConnected(actuallyConnected);
+        console.log(`🔄 Connection state changed: ${actuallyConnected}`);
       }
-    };
-
-    // Start background reconnection after initial attempt
-    const backgroundInterval = setInterval(() => {
-      if (!bluetoothPrinter.isConnected()) {
-        backgroundReconnect();
-      }
-    }, 15000); // Check every 15 seconds
+    }, 3000); // Check every 3 seconds
 
     return () => {
-      if (retryTimeout) clearTimeout(retryTimeout);
-      if (backgroundInterval) clearInterval(backgroundInterval);
+      clearInterval(connectionCheck);
     };
-  }, []);
+  }, [isConnected]);
 
   /**
    * Auto-discover and connect to available Bluetooth printers
@@ -223,24 +197,55 @@ export function useBluetoothPrinter() {
    */
   const printKOT = useCallback(
     async (kot: any) => {
-      if (!bluetoothPrinter.isConnected()) {
+      console.log("🖨️ Starting KOT print process...");
+      console.log("📄 KOT data:", kot);
+
+      // Force connection state sync
+      const actuallyConnected = bluetoothPrinter.isConnected();
+      if (actuallyConnected !== isConnected) {
+        setIsConnected(actuallyConnected);
+        console.log(
+          `🔄 Synced connection state before printing: ${actuallyConnected}`
+        );
+      }
+
+      if (!actuallyConnected) {
+        console.log("🔌 Printer not connected, attempting connection...");
         toast.warning("Connecting to printer...");
-        const connected = await connect();
-        if (!connected) return;
+
+        try {
+          const connected = await connect();
+          if (!connected) {
+            console.error("❌ Failed to connect for KOT printing");
+            return;
+          }
+          console.log("✅ Connected successfully for KOT printing");
+        } catch (error) {
+          console.error("❌ Connection failed:", error);
+          return;
+        }
       }
 
       setIsPrinting(true);
       try {
+        console.log("📤 Sending KOT to Bluetooth printer...");
         await bluetoothPrinter.printKOT(kot);
+        console.log("✅ KOT printed successfully via Bluetooth");
         toast.success("KOT sent to kitchen!");
+
+        // Ensure connection state stays correct
+        setIsConnected(bluetoothPrinter.isConnected());
       } catch (error: any) {
-        console.error("Print KOT failed:", error);
+        console.error("❌ Bluetooth KOT print failed:", error);
         toast.error(`Print failed: ${error.message}`);
+
+        // Update connection state if needed
+        setIsConnected(bluetoothPrinter.isConnected());
       } finally {
         setIsPrinting(false);
       }
     },
-    [connect]
+    [connect, isConnected]
   );
 
   return {

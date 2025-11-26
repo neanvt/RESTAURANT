@@ -56,6 +56,7 @@ function CreateOrderPageComponent() {
   const {
     isSupported: isPrinterSupported,
     isConnected: isPrinterConnected,
+    isConnecting,
     printInvoice: printBluetoothInvoice,
     printKOT: printBluetoothKOT,
     connect: connectPrinter,
@@ -242,6 +243,83 @@ function CreateOrderPageComponent() {
     };
   };
 
+  // Check printer connection before KOT printing
+  const checkPrinterAndPrintKOT = async (kotData: any) => {
+    console.log("🔍 Checking printer connection before KOT printing...");
+    console.log("Printer status:", {
+      isPrinterSupported,
+      isPrinterConnected,
+      bluetoothAvailable:
+        typeof navigator !== "undefined" && "bluetooth" in navigator,
+    });
+
+    // If printer is not supported, fallback to server printing
+    if (!isPrinterSupported) {
+      console.log("📱 Bluetooth not supported, using server printing");
+      return await fallbackToServerPrinting();
+    }
+
+    // If printer is connected, proceed with Bluetooth printing
+    if (isPrinterConnected) {
+      console.log("✅ Printer connected, proceeding with Bluetooth printing");
+      try {
+        console.log("🖨️ Sending KOT to Bluetooth printer:", kotData);
+        await printBluetoothKOT(kotData);
+        console.log("✅ KOT printed successfully via Bluetooth");
+        toast.success("KOT sent to kitchen via Bluetooth!");
+        return true;
+      } catch (error) {
+        console.error("❌ Bluetooth printing failed:", error);
+        toast.error("Bluetooth printing failed, falling back to server");
+        return await fallbackToServerPrinting();
+      }
+    }
+
+    // Printer not connected - try to connect first
+    console.log("🔌 Printer not connected, attempting connection...");
+    try {
+      const connected = await connectPrinter();
+      if (connected) {
+        console.log("✅ Connected successfully, printing KOT");
+        await printBluetoothKOT(kotData);
+        toast.success("Connected and printed KOT via Bluetooth!");
+        return true;
+      } else {
+        console.log("❌ Connection failed, falling back to server");
+        toast.info("Printer not available, using server printing");
+        return await fallbackToServerPrinting();
+      }
+    } catch (error) {
+      console.error("❌ Connection attempt failed:", error);
+      toast.info("Bluetooth unavailable, using server printing");
+      return await fallbackToServerPrinting();
+    }
+  };
+
+  // Fallback to server printing
+  const fallbackToServerPrinting = async () => {
+    // Try multiple sources for kotId
+    const kotId = currentKOT?.id || currentKOT?._id;
+
+    if (kotId) {
+      try {
+        console.log("📤 Sending KOT to server printer, ID:", kotId);
+        await api.post(`/kots/${kotId}/print`);
+        console.log("✅ KOT sent to server printer successfully");
+        toast.success("KOT sent to kitchen!");
+        return true;
+      } catch (error) {
+        console.error("❌ Server printing failed:", error);
+        toast.error("Failed to send KOT to kitchen");
+        return false;
+      }
+    } else {
+      console.error("❌ No KOT ID available for server printing");
+      toast.error("KOT ID missing, cannot print");
+      return false;
+    }
+  };
+
   const handleCreateOrder = async (action: "kot" | "hold") => {
     if (cart.length === 0) {
       toast.error("Please add items to the order");
@@ -317,13 +395,18 @@ function CreateOrderPageComponent() {
           console.log("Invoice created:", invoice);
 
           // Mark invoice as paid - use invoice._id
-          if (!invoice._id) {
-            throw new Error("Invoice created but ID is missing");
+          const invoiceId = invoice._id || (invoice as any).id;
+          if (!invoiceId) {
+            console.warn(
+              "Invoice created but ID is missing, skipping payment update"
+            );
+            // Don't throw error, just log and continue
+          } else {
+            await invoiceAPI.updatePaymentStatus(invoiceId, {
+              paymentStatus: "paid" as const,
+            });
+            console.log("✅ Invoice marked as paid");
           }
-
-          await invoiceAPI.updatePaymentStatus(invoice._id, {
-            paymentStatus: "paid" as const,
-          });
 
           console.log("Invoice marked as paid");
         } catch (invoiceError: any) {
@@ -344,6 +427,7 @@ function CreateOrderPageComponent() {
 
         // Prepare KOT data
         const kotData = {
+          kotId, // Add kotId for fallback printing
           outletName: currentOutlet?.businessName || "Restaurant",
           orderNumber: order.orderNumber || orderId,
           tableNumber: tableNumber || order.table || "",
@@ -355,50 +439,16 @@ function CreateOrderPageComponent() {
           })),
         };
 
-        // Try Bluetooth printing first if supported and connected
-        if (isPrinterSupported && isPrinterConnected) {
-          try {
-            await printBluetoothKOT(kotData);
-            console.log("✅ KOT printed via Bluetooth");
-            const message = resumeOrderId
-              ? "Order resumed and completed! KOT sent to printer and invoice marked as paid."
-              : "Order completed! KOT sent to printer and invoice marked as paid.";
-            toast.success(message);
-          } catch (err) {
-            console.error("Bluetooth print error:", err);
-            const message = resumeOrderId
-              ? "Order resumed and completed but printer failed. Check connection."
-              : "Order completed but printer failed. Check connection.";
-            toast.error(message);
-            // Fallback to server printing
-            api.post(`/kots/${kotId}/print`).catch((e: unknown) => {
-              console.error("Server print error:", e);
-            });
-          }
-        } else {
-          // Fallback to server-side printing
-          api
-            .post(`/kots/${kotId}/print`)
-            .then(() => {
-              console.log("KOT sent to server printer");
-              const message = resumeOrderId
-                ? "Order resumed and completed! KOT sent to printer and invoice marked as paid."
-                : "Order completed! KOT sent to printer and invoice marked as paid.";
-              toast.success(message);
-            })
-            .catch((err: unknown) => {
-              console.error("Print error:", err);
-              const message = resumeOrderId
-                ? "Order resumed and completed! Invoice marked as paid."
-                : "Order completed! Invoice marked as paid.";
-              toast.success(message);
-            });
-        }
-
-        // Show KOT preview
+        // Show KOT preview immediately - let user manually print if needed
         setCurrentOrder(order);
         setCurrentKOT(result.kot);
         setShowKOTPreview(true);
+
+        // Success message
+        const message = resumeOrderId
+          ? "Order resumed and completed! KOT generated successfully."
+          : "Order completed! KOT generated successfully.";
+        toast.success(message);
 
         // Clear cart and reset form after successful order completion
         setCart([]);
@@ -479,6 +529,77 @@ function CreateOrderPageComponent() {
     } finally {
       setIsProcessing(false);
     }
+  };
+
+  // Test KOT printing function for debugging
+  const testKOTPrint = async () => {
+    console.log("🧪 Testing KOT print functionality");
+    console.log("Printer status:", {
+      isPrinterSupported,
+      isPrinterConnected,
+      bluetoothAvailable:
+        typeof navigator !== "undefined" && "bluetooth" in navigator,
+    });
+
+    const testKOTData = {
+      outletName: "Test Restaurant",
+      orderNumber: "TEST-001",
+      tableNumber: "5",
+      date: new Date().toLocaleString(),
+      items: [
+        { name: "Test Item 1", quantity: 2, notes: "Extra spicy" },
+        { name: "Test Item 2", quantity: 1, notes: "" },
+      ],
+    };
+
+    try {
+      console.log("🖨️ Sending test KOT to printer:", testKOTData);
+      await printBluetoothKOT(testKOTData);
+      console.log("✅ Test KOT printed successfully");
+      toast.success("Test KOT printed!");
+    } catch (error) {
+      console.error("❌ Test KOT print failed:", error);
+      toast.error(`Test KOT failed: ${error}`);
+    }
+  };
+
+  // Force connection function for manual testing
+  const forceConnect = async () => {
+    console.log("🔌 Force connecting to Bluetooth printer...");
+    try {
+      const success = await connectPrinter();
+      if (success) {
+        console.log("✅ Force connection successful");
+        toast.success("Printer connected!");
+      } else {
+        console.log("❌ Force connection failed");
+        toast.error("Failed to connect printer");
+      }
+    } catch (error) {
+      console.error("❌ Force connection error:", error);
+      toast.error("Connection error");
+    }
+  };
+
+  // Handle KOT printing from preview
+  const handlePrintKOTFromPreview = async () => {
+    if (!currentKOT || !currentOrder) return;
+
+    const kotData = {
+      kotId: currentKOT.id || currentKOT._id,
+      outletName: currentOutlet?.businessName || "Restaurant",
+      orderNumber: currentOrder.orderNumber,
+      tableNumber: currentOrder.table || "",
+      date: new Date().toLocaleString(),
+      items:
+        currentOrder.items?.map((item: any) => ({
+          name: item.item?.name || item.name,
+          quantity: item.quantity,
+          notes: item.notes || "",
+        })) || [],
+    };
+
+    await checkPrinterAndPrintKOT(kotData);
   };
 
   const handlePrintBill = async () => {
@@ -884,21 +1005,32 @@ function CreateOrderPageComponent() {
         <div className="fixed bottom-32 right-4 flex flex-col gap-3 z-50">
           {/* Bluetooth Printer Button - Show only on mobile */}
           {isPrinterSupported && (
-            <button
-              onClick={connectPrinter}
-              className={`w-14 h-14 rounded-full shadow-2xl border-2 flex items-center justify-center transition-all ${
-                isPrinterConnected
-                  ? "bg-green-600 text-white border-green-600 animate-pulse"
-                  : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"
-              }`}
-              title={
-                isPrinterConnected
-                  ? "Printer Connected"
-                  : "Connect Bluetooth Printer"
-              }
-            >
-              <Bluetooth className="h-6 w-6" />
-            </button>
+            <>
+              <button
+                onClick={forceConnect}
+                className={`w-14 h-14 rounded-full shadow-2xl border-2 flex items-center justify-center transition-all ${
+                  isPrinterConnected
+                    ? "bg-green-600 text-white border-green-600 animate-pulse"
+                    : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"
+                }`}
+                title={
+                  isPrinterConnected
+                    ? "Printer Connected - Click to reconnect"
+                    : "Connect Bluetooth Printer"
+                }
+              >
+                <Bluetooth className="h-6 w-6" />
+              </button>
+
+              {/* Test KOT Print Button - For Debugging */}
+              <button
+                onClick={testKOTPrint}
+                className="w-14 h-14 rounded-full shadow-2xl border-2 bg-blue-600 text-white border-blue-600 hover:bg-blue-700 flex items-center justify-center transition-all"
+                title="Test KOT Print"
+              >
+                <Receipt className="h-6 w-6" />
+              </button>
+            </>
           )}
 
           {/* Customer Details Button */}
@@ -983,6 +1115,7 @@ function CreateOrderPageComponent() {
           outlet={currentOutlet}
           onClose={handleCloseKOTPreview}
           onPrintBill={handlePrintBill}
+          onPrintKOT={handlePrintKOTFromPreview}
         />
       )}
 
