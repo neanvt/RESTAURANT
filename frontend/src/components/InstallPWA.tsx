@@ -17,6 +17,10 @@ export default function InstallPWA() {
   const [isStandalone, setIsStandalone] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const [canShowInstallPrompt, setCanShowInstallPrompt] = useState(false);
+  
+  // Session-based dismissal - use sessionStorage instead of localStorage
+  // This will reset on app restart but persist across page navigation
+  const [sessionDismissed, setSessionDismissed] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
@@ -29,6 +33,14 @@ export default function InstallPWA() {
 
     // Ensure we're in browser environment
     if (typeof window === "undefined" || typeof navigator === "undefined") {
+      return;
+    }
+
+    // Check if already dismissed in this session
+    const sessionDismissalFlag = sessionStorage.getItem("pwa-install-dismissed-session");
+    if (sessionDismissalFlag) {
+      console.log("🚫 Install banner already dismissed in this session");
+      setSessionDismissed(true);
       return;
     }
 
@@ -56,31 +68,24 @@ export default function InstallPWA() {
       return;
     }
 
-    // Clear dismissed flag for testing - uncomment in development
-    const dismissed = localStorage.getItem("pwa-install-dismissed");
-    if (dismissed) {
-      console.log("🧹 Clearing previous dismissal for testing");
-      localStorage.removeItem("pwa-install-dismissed");
+    // Check for long-term dismissal (localStorage - resets after 7 days)
+    const permanentDismissal = localStorage.getItem("pwa-install-dismissed");
+    if (permanentDismissal) {
+      const dismissedTime = parseInt(permanentDismissal);
+      const daysSinceDismissal =
+        (Date.now() - dismissedTime) / (1000 * 60 * 60 * 24);
+
+      // Show again after 7 days
+      if (daysSinceDismissal < 7) {
+        console.log(
+          `⏰ Install prompt permanently dismissed ${daysSinceDismissal.toFixed(1)} days ago, showing again after 7 days`
+        );
+        return;
+      } else {
+        console.log("♻️ Clearing old permanent dismissal, will show prompt again");
+        localStorage.removeItem("pwa-install-dismissed");
+      }
     }
-
-    // Check if user dismissed banner before - DISABLED FOR TESTING
-    // const dismissed = localStorage.getItem("pwa-install-dismissed");
-    // if (dismissed) {
-    //   const dismissedTime = parseInt(dismissed);
-    //   const daysSinceDismissal =
-    //     (Date.now() - dismissedTime) / (1000 * 60 * 60 * 24);
-
-    //   // Show again after 7 days
-    //   if (daysSinceDismissal < 7) {
-    //     console.log(
-    //       `⏰ Install prompt dismissed ${daysSinceDismissal.toFixed(1)} days ago, showing again after 7 days`
-    //     );
-    //     return;
-    //   } else {
-    //     console.log("♻️ Clearing old dismissal, will show prompt again");
-    //     localStorage.removeItem("pwa-install-dismissed");
-    //   }
-    // }
 
     let promptCaptured = false;
 
@@ -156,20 +161,34 @@ export default function InstallPWA() {
     }
   };
 
-  const handleDismiss = () => {
+  const handleDismiss = (permanent = false) => {
     setShowInstallBanner(false);
-    if (typeof localStorage !== "undefined") {
+    setSessionDismissed(true);
+    
+    if (typeof sessionStorage !== "undefined") {
+      // Always set session dismissal (prevents showing again during this session)
+      sessionStorage.setItem("pwa-install-dismissed-session", "true");
+    }
+    
+    if (permanent && typeof localStorage !== "undefined") {
+      // Set permanent dismissal (7 days)
       localStorage.setItem("pwa-install-dismissed", Date.now().toString());
+      console.log("🚫 Install banner permanently dismissed for 7 days");
+    } else {
+      console.log("🚫 Install banner dismissed for this session only");
     }
   };
+
+  const handleDismissTemporary = () => handleDismiss(false);
+  const handleDismissPermanent = () => handleDismiss(true);
 
   // Don't render until mounted (prevents hydration mismatch)
   if (!isMounted) {
     return null;
   }
 
-  // Don't show anything if already installed or banner is hidden
-  if (isStandalone || !showInstallBanner) {
+  // Don't show anything if already installed, banner is hidden, or dismissed in session
+  if (isStandalone || !showInstallBanner || sessionDismissed) {
     return null;
   }
 
@@ -178,15 +197,18 @@ export default function InstallPWA() {
       {/* Install Banner - Compact */}
       <div className="fixed bottom-20 left-4 right-4 z-50 animate-in slide-in-from-bottom duration-300 max-w-md mx-auto">
         <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl shadow-2xl p-3">
-          <button
-            onClick={handleDismiss}
-            className="absolute top-2 right-2 p-1 hover:bg-white/20 rounded-full transition-colors"
-            aria-label="Dismiss"
-          >
-            <X className="h-4 w-4" />
-          </button>
+          <div className="absolute top-2 right-2 flex gap-1">
+            <button
+              onClick={handleDismissTemporary}
+              className="p-1 hover:bg-white/20 rounded-full transition-colors"
+              aria-label="Dismiss for this session"
+              title="Dismiss for this session"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
 
-          <div className="flex items-center gap-3 pr-6">
+          <div className="flex items-center gap-3 pr-8">
             <div className="p-2 bg-white/20 rounded-lg flex-shrink-0">
               <Smartphone className="h-5 w-5" />
             </div>
@@ -211,6 +233,24 @@ export default function InstallPWA() {
                 </Button>
               )}
 
+              {/* iOS Install Instructions */}
+              {isIOS && (
+                <div className="bg-white/10 rounded-lg p-3 text-sm">
+                  <p className="font-medium mb-2">To install on iOS:</p>
+                  <ol className="space-y-1 text-blue-100 mb-3">
+                    <li>1. Tap the Share button (square with arrow)</li>
+                    <li>2. Scroll down and tap "Add to Home Screen"</li>
+                    <li>3. Tap "Add" to confirm</li>
+                  </ol>
+                  <button
+                    onClick={handleDismissPermanent}
+                    className="text-xs text-blue-200 hover:text-white underline"
+                  >
+                    Don't show again for 7 days
+                  </button>
+                </div>
+              )}
+
               {/* Manual Instructions when no native prompt available */}
               {!isIOS && !deferredPrompt && (
                 <div className="text-sm text-blue-100">
@@ -220,24 +260,20 @@ export default function InstallPWA() {
                       &quot;Install app&quot;
                     </strong>
                   </p>
-                  <p className="text-xs text-blue-200">
-                    Or enable:{" "}
-                    <code className="text-[10px]">
-                      chrome://flags/#bypass-app-banner
-                    </code>
-                  </p>
-                </div>
-              )}
-
-              {/* iOS Install Instructions */}
-              {isIOS && (
-                <div className="bg-white/10 rounded-lg p-3 text-sm">
-                  <p className="font-medium mb-2">To install on iOS:</p>
-                  <ol className="space-y-1 text-blue-100">
-                    <li>1. Tap the Share button (square with arrow)</li>
-                    <li>2. Scroll down and tap "Add to Home Screen"</li>
-                    <li>3. Tap "Add" to confirm</li>
-                  </ol>
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs text-blue-200">
+                      Or enable:{" "}
+                      <code className="text-[10px]">
+                        chrome://flags/#bypass-app-banner
+                      </code>
+                    </p>
+                    <button
+                      onClick={handleDismissPermanent}
+                      className="text-xs text-blue-200 hover:text-white underline ml-2"
+                    >
+                      Don't show for 7 days
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
