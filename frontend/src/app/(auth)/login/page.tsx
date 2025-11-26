@@ -164,23 +164,29 @@ export default function LoginPage() {
               </>
             ) : (
               <>
-                <input
-                  className="w-full p-2 border rounded"
-                  placeholder="Email or Phone"
-                  value={identifier}
-                  onChange={(e) =>
-                    setIdentifier((e.target as HTMLInputElement).value)
-                  }
-                />
-                <input
-                  className="w-full p-2 border rounded"
-                  placeholder="Password"
-                  type="password"
-                  value={password}
-                  onChange={(e) =>
-                    setPassword((e.target as HTMLInputElement).value)
-                  }
-                />
+                <div className="space-y-2">
+                  <input
+                    className="w-full h-12 px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Email or Phone"
+                    value={identifier}
+                    onChange={(e) =>
+                      setIdentifier((e.target as HTMLInputElement).value)
+                    }
+                    autoComplete="username"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <input
+                    className="w-full h-12 px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Password"
+                    type="password"
+                    value={password}
+                    onChange={(e) =>
+                      setPassword((e.target as HTMLInputElement).value)
+                    }
+                    autoComplete="current-password"
+                  />
+                </div>
                 <Button
                   onClick={handlePasswordLogin}
                   disabled={isLoading || !identifier || !password}

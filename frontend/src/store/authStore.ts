@@ -6,7 +6,7 @@ interface User {
   phone: string;
   name?: string;
   email?: string;
-  role: "owner" | "manager" | "staff";
+  role: "primary_admin" | "secondary_admin" | "staff" | "waiter" | "kitchen";
   outlets: string[];
   currentOutlet?: string;
 }
