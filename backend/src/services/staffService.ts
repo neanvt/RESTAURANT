@@ -50,17 +50,22 @@ export class StaffService {
         user.permissions =
           data.permissions || this.getDefaultPermissions(data.role);
         user.status = "joined";
+        // Set currentOutlet if not already set
+        if (!user.currentOutlet) {
+          user.currentOutlet = new mongoose.Types.ObjectId(data.outletId);
+        }
         await user.save();
       } else {
         throw new Error("User already added to this outlet");
       }
     } else {
-      // Create new user
+      // Create new user with currentOutlet set to the outlet they're being invited to
       user = await User.create({
         phone: data.phone,
         name: data.name,
         role: data.role,
         outlets: [data.outletId],
+        currentOutlet: data.outletId,
         permissions: data.permissions || this.getDefaultPermissions(data.role),
         invitedBy: data.invitedBy,
         status: "invited",

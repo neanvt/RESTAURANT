@@ -2,7 +2,13 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -97,7 +103,8 @@ export default function ChangePasswordPage() {
             Password Change Required
           </CardTitle>
           <CardDescription className="text-center">
-            For security reasons, you must change your password before continuing.
+            For security reasons, you must change your password before
+            continuing.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -157,7 +164,9 @@ export default function ChangePasswordPage() {
 
           <Button
             onClick={handleChangePassword}
-            disabled={loading || !oldPassword || !newPassword || !confirmPassword}
+            disabled={
+              loading || !oldPassword || !newPassword || !confirmPassword
+            }
             className="w-full"
             size="lg"
           >
