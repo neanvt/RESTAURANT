@@ -8,6 +8,7 @@ import {
   register,
   login,
   setPassword,
+  changePassword,
 } from "../controllers/authController";
 import { authenticate } from "../middleware/authMiddleware";
 import { otpRateLimiter, authRateLimiter } from "../middleware/rateLimiter";
@@ -47,6 +48,13 @@ router.post("/login", authRateLimiter, login);
  * @access  Public
  */
 router.post("/set-password", authRateLimiter, setPassword);
+
+/**
+ * @route   POST /api/auth/change-password
+ * @desc    Change password with old password verification
+ * @access  Protected
+ */
+router.post("/change-password", authenticate, changePassword);
 
 /**
  * @route   POST /api/auth/refresh

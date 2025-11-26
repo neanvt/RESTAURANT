@@ -13,6 +13,7 @@ export interface IUser extends Document {
   status: "invited" | "joined" | "suspended";
   lastActive?: Date;
   isActive: boolean;
+  requirePasswordChange?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -99,6 +100,10 @@ const UserSchema: Schema = new Schema(
     isActive: {
       type: Boolean,
       default: true,
+    },
+    requirePasswordChange: {
+      type: Boolean,
+      default: false,
     },
   },
   {

@@ -7,6 +7,7 @@ export interface User {
   outlets: string[];
   currentOutlet?: string;
   isActive?: boolean;
+  requirePasswordChange?: boolean;
   createdAt?: string;
   updatedAt?: string;
 }

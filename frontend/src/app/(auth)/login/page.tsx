@@ -96,7 +96,13 @@ export default function LoginPage() {
         try {
           setAuth(res.data.user, res.data.accessToken, res.data.refreshToken);
         } catch (e) {}
-        router.push("/dashboard");
+        
+        // Check if password change is required
+        if (res.data.user.requirePasswordChange) {
+          router.push("/change-password");
+        } else {
+          router.push("/dashboard");
+        }
       } else {
         setError(res.error?.message || "Login failed");
       }

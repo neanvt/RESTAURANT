@@ -9,6 +9,7 @@ interface User {
   role: "primary_admin" | "secondary_admin" | "staff" | "waiter" | "kitchen";
   outlets: string[];
   currentOutlet?: string;
+  requirePasswordChange?: boolean;
 }
 
 interface AuthState {

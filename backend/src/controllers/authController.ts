@@ -472,6 +472,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
           role: foundUser.role,
           outlets: foundUser.outlets,
           currentOutlet: foundUser.currentOutlet,
+          requirePasswordChange: foundUser.requirePasswordChange || false,
         },
         accessToken: tokens.accessToken,
         refreshToken: tokens.refreshToken,
@@ -567,6 +568,110 @@ export const setPassword = async (
       error: {
         code: "INTERNAL_ERROR",
         message: "An error occurred while setting password",
+      },
+    });
+  }
+};
+
+/**
+ * Change password with old password verification
+ * POST /api/auth/change-password
+ */
+export const changePassword = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { oldPassword, newPassword } = req.body;
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      res.status(401).json({
+        success: false,
+        error: {
+          code: "UNAUTHORIZED",
+          message: "User not authenticated",
+        },
+      });
+      return;
+    }
+
+    if (!oldPassword || !newPassword) {
+      res.status(400).json({
+        success: false,
+        error: {
+          code: "MISSING_FIELDS",
+          message: "Old password and new password are required",
+        },
+      });
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      res.status(400).json({
+        success: false,
+        error: {
+          code: "INVALID_PASSWORD",
+          message: "New password must be at least 6 characters",
+        },
+      });
+      return;
+    }
+
+    const user = await User.findById(userId);
+    if (!user || !user.isActive) {
+      res.status(404).json({
+        success: false,
+        error: {
+          code: "USER_NOT_FOUND",
+          message: "User not found",
+        },
+      });
+      return;
+    }
+
+    if (!user.password) {
+      res.status(400).json({
+        success: false,
+        error: {
+          code: "NO_PASSWORD",
+          message: "No password set for this account",
+        },
+      });
+      return;
+    }
+
+    // Verify old password
+    const bcrypt = await import("bcrypt");
+    const isMatch = await bcrypt.compare(oldPassword, user.password);
+    if (!isMatch) {
+      res.status(401).json({
+        success: false,
+        error: {
+          code: "INVALID_PASSWORD",
+          message: "Current password is incorrect",
+        },
+      });
+      return;
+    }
+
+    // Hash new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    user.password = hashedPassword;
+    user.requirePasswordChange = false;
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Password changed successfully",
+    });
+  } catch (error: any) {
+    console.error("Error in changePassword:", error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: "INTERNAL_ERROR",
+        message: "An error occurred while changing password",
       },
     });
   }
