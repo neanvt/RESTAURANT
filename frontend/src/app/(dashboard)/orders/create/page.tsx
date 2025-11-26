@@ -390,33 +390,17 @@ function CreateOrderPageComponent() {
           return;
         }
 
-        // Create invoice and mark as paid immediately
+        // Create invoice - backend automatically marks it as paid
         try {
           const invoiceData = {
             orderId: orderId,
             paymentMethod: "cash" as const, // Default to cash with proper typing
           };
-          const invoice = await invoiceAPI.createInvoice(invoiceData);
-          console.log("Invoice created:", invoice);
-
-          // Mark invoice as paid - use invoice._id
-          const invoiceId = invoice._id || (invoice as any).id;
-          if (!invoiceId) {
-            console.warn(
-              "Invoice created but ID is missing, skipping payment update"
-            );
-            // Don't throw error, just log and continue
-          } else {
-            await invoiceAPI.updatePaymentStatus(invoiceId, {
-              paymentStatus: "paid" as const,
-            });
-            console.log("✅ Invoice marked as paid");
-          }
-
-          console.log("Invoice marked as paid");
+          const result = await invoiceAPI.createInvoice(invoiceData);
+          console.log("✅ Invoice created and marked as paid:", result);
         } catch (invoiceError: any) {
-          console.error("Invoice creation/payment error:", invoiceError);
-          toast.warning("Order created but failed to auto-complete payment");
+          console.error("Invoice creation error:", invoiceError);
+          toast.warning("Order created but failed to create invoice");
         }
 
         // Format date for printing
