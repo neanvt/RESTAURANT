@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Plus,
   Minus,
@@ -32,19 +32,22 @@ import { toast } from "sonner";
 import Image from "next/image";
 import { getFullImageUrl } from "@/lib/imageUtils";
 import { useBluetoothPrinter } from "@/hooks/useBluetoothPrinter";
+import { OrderResumeHandler } from "@/components/orders/OrderResumeHandler";
 import KOTPreview from "@/components/orders/KOTPreview";
 import InvoicePreview from "@/components/orders/InvoicePreview";
 import api from "@/lib/api/axios-config";
+import { invoiceAPI } from "@/lib/api/invoices";
 
 interface CartItem extends Item {
   cartQuantity: number;
   notes?: string;
 }
 
-export default function CreateOrderPage() {
+function CreateOrderPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { items, filters, fetchItems, setFilters } = useItemStore();
-  const { createOrder, generateKOT, holdOrder } = useOrderStore();
+  const { createOrder, generateKOT, holdOrder, getOrderById, resumeOrder } = useOrderStore();
   const { categories, fetchCategories } = useCategoryStore();
   const { currentOutlet, fetchCurrentOutlet } = useOutletStore();
 
@@ -153,7 +156,7 @@ export default function CreateOrderPage() {
     };
   };
 
-  const handleCreateOrder = async (action: "kot" | "hold" | "bill") => {
+  const handleCreateOrder = async (action: "kot" | "hold") => {
     if (cart.length === 0) {
       toast.error("Please add items to the order");
       return;
@@ -162,35 +165,47 @@ export default function CreateOrderPage() {
     try {
       setIsProcessing(true);
 
-      const orderData = {
-        items: cart.map((item) => ({
-          item: item.id,
-          quantity: item.cartQuantity,
-          notes: item.notes,
-        })),
-        customer:
-          customerName || customerPhone
-            ? {
-                name: customerName || undefined,
-                phone: customerPhone || undefined,
-              }
-            : undefined,
-        tableNumber: tableNumber || undefined,
-        notes: orderNotes || undefined,
-      };
+      // Check if we're resuming a held order
+      const resumeOrderId = searchParams.get('resumeOrderId');
+      let orderId: string;
+      let order: any;
 
-      // Create the order
-      const order: any = await createOrder(orderData);
+      if (resumeOrderId) {
+        // Resume the held order
+        order = await resumeOrder(resumeOrderId);
+        orderId = order.id || order._id;
+        console.log("Order resumed:", order);
+      } else {
+        // Create new order
+        const orderData = {
+          items: cart.map((item) => ({
+            item: item.id,
+            quantity: item.cartQuantity,
+            notes: item.notes,
+          })),
+          customer:
+            customerName || customerPhone
+              ? {
+                  name: customerName || undefined,
+                  phone: customerPhone || undefined,
+                }
+              : undefined,
+          tableNumber: tableNumber || undefined,
+          notes: orderNotes || undefined,
+        };
 
-      console.log("Order created - full response:", order);
-      console.log("Order ID:", order?.id);
-      console.log("Order _id:", order?._id);
+        order = await createOrder(orderData);
+        orderId = order?.id || order?._id;
+        
+        console.log("Order created - full response:", order);
+        console.log("Order ID:", order?.id);
+        console.log("Order _id:", order?._id);
 
-      // Check if order was created successfully
-      const orderId = order?.id || order?._id;
-      if (!order || !orderId) {
-        console.error("Order object:", order);
-        throw new Error("Order created but ID is missing");
+        // Check if order was created successfully
+        if (!order || !orderId) {
+          console.error("Order object:", order);
+          throw new Error("Order created but ID is missing");
+        }
       }
 
       if (action === "kot") {
@@ -204,6 +219,26 @@ export default function CreateOrderPage() {
           toast.warning("KOT generated but ID is missing");
           router.push("/orders");
           return;
+        }
+
+        // Create invoice and mark as paid immediately
+        try {
+          const invoiceData = {
+            orderId: orderId,
+            paymentMethod: "cash" as const, // Default to cash with proper typing
+          };
+          const invoice = await invoiceAPI.createInvoice(invoiceData);
+          console.log("Invoice created:", invoice);
+
+          // Mark invoice as paid
+          await invoiceAPI.updatePaymentStatus(invoice._id, {
+            paymentStatus: "paid" as const,
+          });
+
+          console.log("Invoice marked as paid");
+        } catch (invoiceError: any) {
+          console.error("Invoice creation/payment error:", invoiceError);
+          toast.warning("Order created but failed to auto-complete payment");
         }
 
         // Format date for printing
@@ -235,10 +270,16 @@ export default function CreateOrderPage() {
           try {
             await printBluetoothKOT(kotData);
             console.log("✅ KOT printed via Bluetooth");
-            toast.success("KOT sent to Bluetooth printer!");
+            const message = resumeOrderId ? 
+              "Order resumed and completed! KOT sent to printer and invoice marked as paid." :
+              "Order completed! KOT sent to printer and invoice marked as paid.";
+            toast.success(message);
           } catch (err) {
             console.error("Bluetooth print error:", err);
-            toast.error("Bluetooth print failed. Check connection.");
+            const message = resumeOrderId ? 
+              "Order resumed and completed but printer failed. Check connection." :
+              "Order completed but printer failed. Check connection.";
+            toast.error(message);
             // Fallback to server printing
             api.post(`/kots/${kotId}/print`).catch((e: unknown) => {
               console.error("Server print error:", e);
@@ -250,9 +291,17 @@ export default function CreateOrderPage() {
             .post(`/kots/${kotId}/print`)
             .then(() => {
               console.log("KOT sent to server printer");
+              const message = resumeOrderId ? 
+                "Order resumed and completed! KOT sent to printer and invoice marked as paid." :
+                "Order completed! KOT sent to printer and invoice marked as paid.";
+              toast.success(message);
             })
             .catch((err: unknown) => {
               console.error("Print error:", err);
+              const message = resumeOrderId ? 
+                "Order resumed and completed! Invoice marked as paid." :
+                "Order completed! Invoice marked as paid.";
+              toast.success(message);
             });
         }
 
@@ -260,17 +309,79 @@ export default function CreateOrderPage() {
         setCurrentOrder(order);
         setCurrentKOT(result.kot);
         setShowKOTPreview(true);
-        toast.success("KOT generated and sent to printer!");
+        
+        // Clear cart and reset form after successful order completion
+        setCart([]);
+        setCustomerName("");
+        setCustomerPhone("");
+        setTableNumber("");
+        setOrderNotes("");
       } else if (action === "hold") {
-        await holdOrder(orderId);
-        toast.success("Order held successfully");
-        router.push("/orders");
-      } else if (action === "bill") {
-        // Generate both KOT and Invoice
+        // Generate KOT first, then hold the order
         const result = await generateKOT(orderId);
-        console.log("KOT generated for bill:", result);
-        toast.success("Order created and ready for billing!");
-        router.push(`/orders/${orderId}/invoice`);
+        console.log("KOT generated for held order:", result);
+
+        const kotId = result.kot?.id || result.kot?._id;
+
+        // Print KOT for kitchen reference with HOLD status
+        const now = new Date();
+        const formattedDate = `${now.getDate().toString().padStart(2, "0")}/${(
+          now.getMonth() + 1
+        )
+          .toString()
+          .padStart(2, "0")}/${now.getFullYear()} ${now
+          .getHours()
+          .toString()
+          .padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}`;
+
+        const kotData = {
+          outletName: currentOutlet?.businessName || "Restaurant",
+          orderNumber: order.orderNumber || orderId,
+          tableNumber: tableNumber || order.table || "",
+          date: formattedDate,
+          items: cart.map((item) => ({
+            name: item.name,
+            quantity: item.cartQuantity,
+            notes: item.notes,
+          })),
+          isHold: true, // Flag to indicate this is a held order
+        };
+
+        // Print KOT with HOLD status
+        if (isPrinterSupported && isPrinterConnected) {
+          try {
+            await printBluetoothKOT(kotData);
+            console.log("✅ HOLD KOT printed via Bluetooth");
+          } catch (err) {
+            console.error("Bluetooth print error:", err);
+            // Fallback to server printing
+            if (kotId) {
+              api.post(`/kots/${kotId}/print`).catch((e: unknown) => {
+                console.error("Server print error:", e);
+              });
+            }
+          }
+        } else {
+          // Fallback to server-side printing
+          if (kotId) {
+            api
+              .post(`/kots/${kotId}/print`)
+              .then(() => {
+                console.log("HOLD KOT sent to server printer");
+              })
+              .catch((err: unknown) => {
+                console.error("Print error:", err);
+              });
+          }
+        }
+
+        // Now hold the order
+        await holdOrder(orderId);
+        const message = resumeOrderId ? 
+          "Resumed order held again successfully. KOT printed for kitchen reference." :
+          "Order held successfully. KOT printed for kitchen reference.";
+        toast.success(message);
+        router.push("/orders");
       }
     } catch (error: any) {
       console.error("Order creation error:", error);
@@ -450,6 +561,16 @@ export default function CreateOrderPage() {
 
   return (
     <div className="h-screen bg-gray-50 flex flex-col overflow-hidden">
+      {/* Order Resume Handler */}
+      <OrderResumeHandler
+        items={items}
+        setCart={setCart}
+        setCustomerName={setCustomerName}
+        setCustomerPhone={setCustomerPhone}
+        setTableNumber={setTableNumber}
+        setOrderNotes={setOrderNotes}
+      />
+      
       {/* Header - Fixed */}
       <div className="bg-white border-b z-10 flex-shrink-0">
         <div className="px-4 py-3">
@@ -768,14 +889,6 @@ export default function CreateOrderPage() {
               >
                 {isProcessing ? "..." : "HOLD"}
               </Button>
-              <Button
-                onClick={() => handleCreateOrder("bill")}
-                disabled={isProcessing}
-                className="h-9 text-xs bg-blue-600 hover:bg-blue-700 font-semibold"
-                title="Generate bill and invoice"
-              >
-                {isProcessing ? "..." : "BILL"}
-              </Button>
             </div>
           </div>
         </div>
@@ -807,5 +920,13 @@ export default function CreateOrderPage() {
           />
         )}
     </div>
+  );
+}
+
+export default function CreateOrderPage() {
+  return (
+    <Suspense fallback={<div className="h-screen flex items-center justify-center">Loading...</div>}>
+      <CreateOrderPageContent />
+    </Suspense>
   );
 }

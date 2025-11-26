@@ -101,8 +101,8 @@ export default function OrdersPage() {
 
   const handleResume = async (id: string) => {
     try {
-      await resumeOrder(id);
-      toast.success("Order resumed successfully");
+      // Instead of just resuming, redirect to order creation page with the held order data
+      router.push(`/orders/create?resumeOrderId=${id}`);
     } catch (error: any) {
       toast.error(error.message || "Failed to resume order");
     }

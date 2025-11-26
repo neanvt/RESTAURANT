@@ -648,12 +648,20 @@ class BluetoothPrinterService {
       quantity: number;
       notes?: string;
     }>;
+    isHold?: boolean;
   }): Promise<void> {
     await this.initialize();
 
-    // Header - KITCHEN ORDER in normal text
+    // Header - KITCHEN ORDER in normal text, with HOLD status if applicable
     await this.write(Commands.ALIGN_CENTER);
-    await this.write("KITCHEN ORDER\n");
+    if (kot.isHold) {
+      await this.write(Commands.BOLD_ON);
+      await this.write("*** HOLD ORDER ***\n");
+      await this.write(Commands.BOLD_OFF);
+      await this.write("KITCHEN ORDER\n");
+    } else {
+      await this.write("KITCHEN ORDER\n");
+    }
     await this.write(Commands.ALIGN_LEFT);
     await this.write("================================\n");
 
@@ -665,6 +673,13 @@ class BluetoothPrinterService {
     }
 
     await this.write("Time: " + kot.date + "\n");
+    
+    if (kot.isHold) {
+      await this.write(Commands.BOLD_ON);
+      await this.write("Status: ON HOLD\n");
+      await this.write(Commands.BOLD_OFF);
+    }
+    
     await this.write("================================\n");
 
     // Items header
@@ -685,9 +700,14 @@ class BluetoothPrinterService {
 
     await this.write("================================\n");
 
-    // Footer
+    // Footer with hold status
     await this.write(Commands.ALIGN_CENTER);
     await this.write(kot.outletName + "\n");
+    if (kot.isHold) {
+      await this.write(Commands.BOLD_ON);
+      await this.write("*** ORDER ON HOLD ***\n");
+      await this.write(Commands.BOLD_OFF);
+    }
     await this.write(Commands.ALIGN_LEFT);
 
     // await this.feed(2);
