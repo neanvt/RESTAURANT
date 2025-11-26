@@ -74,6 +74,11 @@ function CreateOrderPageComponent() {
   const [showCustomerDetails, setShowCustomerDetails] = useState(false);
   const [showFavourite, setShowFavourite] = useState(false);
   const [showBillSummary, setShowBillSummary] = useState(false);
+  const [showFloatingActions, setShowFloatingActions] = useState(false);
+  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
+  const [selectedPaymentMode, setSelectedPaymentMode] = useState<
+    "cash" | "upi"
+  >("cash");
 
   // Preview states
   const [hasLoadedHeldOrder, setHasLoadedHeldOrder] = useState(false);
@@ -325,7 +330,10 @@ function CreateOrderPageComponent() {
     }
   };
 
-  const handleCreateOrder = async (action: "kot" | "hold") => {
+  const handleCreateOrder = async (
+    action: "kot" | "hold",
+    paymentMode: "cash" | "upi" = "cash"
+  ) => {
     if (cart.length === 0) {
       toast.error("Please add items to the order");
       return;
@@ -394,7 +402,7 @@ function CreateOrderPageComponent() {
         try {
           const invoiceData = {
             orderId: orderId,
-            paymentMethod: "cash" as const, // Default to cash with proper typing
+            paymentMethod: paymentMode, // Use selected payment mode
           };
           const result = await invoiceAPI.createInvoice(invoiceData);
           console.log("✅ Invoice created and marked as paid:", result);
@@ -820,7 +828,7 @@ function CreateOrderPageComponent() {
 
         {/* Items Grid */}
         <div className="px-4 pb-4">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 gap-3">
             {filteredItems.map((item, index) => {
               const inCart = cart.find((i) => i.id === item.id);
 
@@ -992,64 +1000,82 @@ function CreateOrderPageComponent() {
       {/* Floating Action Buttons - Right Bottom */}
       {cart.length > 0 && (
         <div className="fixed bottom-32 right-4 flex flex-col gap-3 z-50">
-          {/* Bluetooth Printer Button - Show only on mobile */}
-          {isPrinterSupported && (
-            <>
+          {/* Collapsible Action Buttons */}
+          {showFloatingActions && (
+            <div className="flex flex-col gap-3 animate-in slide-in-from-bottom duration-300">
+              {/* Bluetooth Printer Button - Show only on mobile */}
+              {isPrinterSupported && (
+                <>
+                  <button
+                    onClick={forceConnect}
+                    className={`w-14 h-14 rounded-full shadow-2xl border-2 flex items-center justify-center transition-all ${
+                      isPrinterConnected
+                        ? "bg-green-600 text-white border-green-600 animate-pulse"
+                        : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"
+                    }`}
+                    title={
+                      isPrinterConnected
+                        ? "Printer Connected - Click to reconnect"
+                        : "Connect Bluetooth Printer"
+                    }
+                  >
+                    <Bluetooth className="h-6 w-6" />
+                  </button>
+
+                  {/* Test KOT Print Button - For Debugging */}
+                  <button
+                    onClick={testKOTPrint}
+                    className="w-14 h-14 rounded-full shadow-2xl border-2 bg-blue-600 text-white border-blue-600 hover:bg-blue-700 flex items-center justify-center transition-all"
+                    title="Test KOT Print"
+                  >
+                    <Receipt className="h-6 w-6" />
+                  </button>
+                </>
+              )}
+
+              {/* Customer Details Button */}
               <button
-                onClick={forceConnect}
+                onClick={() => {
+                  setShowCustomerDetails(!showCustomerDetails);
+                  if (!showCustomerDetails) setShowBillSummary(false);
+                }}
                 className={`w-14 h-14 rounded-full shadow-2xl border-2 flex items-center justify-center transition-all ${
-                  isPrinterConnected
-                    ? "bg-green-600 text-white border-green-600 animate-pulse"
+                  showCustomerDetails
+                    ? "bg-blue-600 text-white border-blue-600"
                     : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"
                 }`}
-                title={
-                  isPrinterConnected
-                    ? "Printer Connected - Click to reconnect"
-                    : "Connect Bluetooth Printer"
-                }
               >
-                <Bluetooth className="h-6 w-6" />
+                <User className="h-6 w-6" />
               </button>
 
-              {/* Test KOT Print Button - For Debugging */}
+              {/* Bill Summary Button */}
               <button
-                onClick={testKOTPrint}
-                className="w-14 h-14 rounded-full shadow-2xl border-2 bg-blue-600 text-white border-blue-600 hover:bg-blue-700 flex items-center justify-center transition-all"
-                title="Test KOT Print"
+                onClick={() => {
+                  setShowBillSummary(!showBillSummary);
+                  if (!showBillSummary) setShowCustomerDetails(false);
+                }}
+                className={`w-14 h-14 rounded-full shadow-2xl border-2 flex items-center justify-center transition-all ${
+                  showBillSummary
+                    ? "bg-blue-600 text-white border-blue-600"
+                    : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"
+                }`}
               >
                 <Receipt className="h-6 w-6" />
               </button>
-            </>
+            </div>
           )}
 
-          {/* Customer Details Button */}
+          {/* Main Toggle Button */}
           <button
-            onClick={() => {
-              setShowCustomerDetails(!showCustomerDetails);
-              if (!showCustomerDetails) setShowBillSummary(false);
-            }}
-            className={`w-14 h-14 rounded-full shadow-2xl border-2 flex items-center justify-center transition-all ${
-              showCustomerDetails
-                ? "bg-blue-600 text-white border-blue-600"
-                : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"
-            }`}
+            onClick={() => setShowFloatingActions(!showFloatingActions)}
+            className="w-14 h-14 rounded-full shadow-2xl border-2 bg-blue-600 text-white border-blue-600 hover:bg-blue-700 flex items-center justify-center transition-all"
+            title={showFloatingActions ? "Close Actions" : "Open Actions"}
           >
-            <User className="h-6 w-6" />
-          </button>
-
-          {/* Bill Summary Button */}
-          <button
-            onClick={() => {
-              setShowBillSummary(!showBillSummary);
-              if (!showBillSummary) setShowCustomerDetails(false);
-            }}
-            className={`w-14 h-14 rounded-full shadow-2xl border-2 flex items-center justify-center transition-all ${
-              showBillSummary
-                ? "bg-blue-600 text-white border-blue-600"
-                : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"
-            }`}
-          >
-            <Receipt className="h-6 w-6" />
+            {showFloatingActions ? (
+              <ChevronDown className="h-6 w-6" />
+            ) : (
+              <ChevronUp className="h-6 w-6" />
+            )}
           </button>
         </div>
       )}
@@ -1075,7 +1101,7 @@ function CreateOrderPageComponent() {
             <div className="grid grid-cols-2 gap-3">
               <Button
                 variant="outline"
-                onClick={() => handleCreateOrder("kot")}
+                onClick={() => setShowPaymentDialog(true)}
                 disabled={isProcessing}
                 className="h-10 text-sm font-semibold w-full"
                 title="Print KOT for kitchen"
@@ -1090,6 +1116,103 @@ function CreateOrderPageComponent() {
                 title="Hold order for later"
               >
                 {isProcessing ? "..." : "HOLD"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Payment Mode Dialog */}
+      {showPaymentDialog && (
+        <div className="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg shadow-2xl w-full max-w-sm animate-in zoom-in-95 duration-200">
+            <div className="p-6 border-b">
+              <h3 className="text-lg font-semibold text-gray-900">
+                Select Payment Mode
+              </h3>
+              <p className="text-sm text-gray-600 mt-1">
+                Choose payment method for this order
+              </p>
+            </div>
+            <div className="p-6 space-y-3">
+              <button
+                onClick={() => setSelectedPaymentMode("cash")}
+                className={`w-full p-4 rounded-lg border-2 transition-all text-left ${
+                  selectedPaymentMode === "cash"
+                    ? "border-blue-600 bg-blue-50"
+                    : "border-gray-200 hover:border-gray-300"
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="font-semibold text-gray-900">Cash</div>
+                    <div className="text-sm text-gray-600">Pay with cash</div>
+                  </div>
+                  {selectedPaymentMode === "cash" && (
+                    <div className="w-5 h-5 rounded-full bg-blue-600 flex items-center justify-center">
+                      <svg
+                        className="w-3 h-3 text-white"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    </div>
+                  )}
+                </div>
+              </button>
+              <button
+                onClick={() => setSelectedPaymentMode("upi")}
+                className={`w-full p-4 rounded-lg border-2 transition-all text-left ${
+                  selectedPaymentMode === "upi"
+                    ? "border-blue-600 bg-blue-50"
+                    : "border-gray-200 hover:border-gray-300"
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="font-semibold text-gray-900">UPI</div>
+                    <div className="text-sm text-gray-600">Pay with UPI</div>
+                  </div>
+                  {selectedPaymentMode === "upi" && (
+                    <div className="w-5 h-5 rounded-full bg-blue-600 flex items-center justify-center">
+                      <svg
+                        className="w-3 h-3 text-white"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    </div>
+                  )}
+                </div>
+              </button>
+            </div>
+            <div className="p-6 border-t flex gap-3">
+              <Button
+                variant="outline"
+                onClick={() => setShowPaymentDialog(false)}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={() => {
+                  setShowPaymentDialog(false);
+                  handleCreateOrder("kot", selectedPaymentMode);
+                }}
+                disabled={isProcessing}
+                className="flex-1"
+              >
+                Confirm & Print KOT
               </Button>
             </div>
           </div>
