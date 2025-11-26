@@ -32,10 +32,7 @@ export default function BluetoothPrinterManager() {
         const success = await autoDiscoverAndConnect();
 
         if (success) {
-          toast.success("Bluetooth printer connected!", {
-            icon: "🔗",
-            duration: 2000,
-          });
+          // Don't show toast on retry success - it's handled by initial connection
           setShowFloatingButton(false);
           clearInterval(retryInterval);
         } else {
@@ -69,31 +66,12 @@ export default function BluetoothPrinterManager() {
       const success = await autoDiscoverAndConnect();
 
       if (success) {
-        toast.success("Bluetooth printer connected automatically!", {
-          icon: "🔗",
-          duration: 3000,
-        });
+        // Connection successful - no toast needed, the green indicator will show
         setShowFloatingButton(false);
       } else {
-        // Show floating button with a hint for first-time setup
+        // Show floating button silently - user can click to connect
         if (isSupported) {
           setShowFloatingButton(true);
-
-          // Show a helpful toast for first-time users after a delay
-          setTimeout(() => {
-            if (!isConnected) {
-              toast.info(
-                "🔗 Bluetooth printer not found. Tap the icon to connect manually.",
-                {
-                  duration: 4000,
-                  action: {
-                    label: "Connect",
-                    onClick: handleManualConnect,
-                  },
-                }
-              );
-            }
-          }, 3000);
         }
       }
     };
@@ -107,10 +85,7 @@ export default function BluetoothPrinterManager() {
       const success = await connect();
       if (success) {
         setShowFloatingButton(false);
-        toast.success("Bluetooth printer connected!", {
-          icon: "🔗",
-          duration: 3000,
-        });
+        // Toast is already shown by the connect() function in the hook
       }
     } catch (error) {
       console.error("Manual connect failed:", error);

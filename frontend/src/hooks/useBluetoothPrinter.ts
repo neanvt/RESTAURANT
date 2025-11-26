@@ -9,33 +9,14 @@ export function useBluetoothPrinter() {
   const [isConnecting, setIsConnecting] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
 
-  // Auto-reconnect on mount and sync connection state regularly
+  // Sync connection state regularly (auto-connection is handled by BluetoothPrinterManager)
   useEffect(() => {
-    const syncAndConnect = async () => {
-      // Sync actual connection state with React state
-      const actuallyConnected = bluetoothPrinter.isConnected();
-      if (actuallyConnected !== isConnected) {
-        setIsConnected(actuallyConnected);
-        console.log(`🔄 Synced connection state: ${actuallyConnected}`);
-      }
-
-      // Try auto-connection if not connected
-      if (bluetoothPrinter.isSupported() && !actuallyConnected) {
-        console.log("🔌 Attempting auto-connection...");
-        try {
-          const connected = await bluetoothPrinter.autoDiscoverAndConnect();
-          if (connected) {
-            setIsConnected(true);
-            console.log("✅ Printer auto-connected on mount");
-          }
-        } catch (error) {
-          console.log("❌ Auto-connection failed:", error);
-        }
-      }
-    };
-
-    // Initial sync and connect
-    syncAndConnect();
+    // Initial sync of connection state
+    const actuallyConnected = bluetoothPrinter.isConnected();
+    if (actuallyConnected !== isConnected) {
+      setIsConnected(actuallyConnected);
+      console.log(`🔄 Synced connection state: ${actuallyConnected}`);
+    }
 
     // Regular connection monitoring
     const connectionCheck = setInterval(() => {
