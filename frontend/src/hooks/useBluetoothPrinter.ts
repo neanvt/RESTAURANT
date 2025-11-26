@@ -24,6 +24,47 @@ export function useBluetoothPrinter() {
   }, []);
 
   /**
+   * Auto-discover and connect to available Bluetooth printers
+   */
+  const autoDiscoverAndConnect = useCallback(async () => {
+    if (!bluetoothPrinter.isSupported()) {
+      console.log("Bluetooth printing not supported on this device");
+      return false;
+    }
+
+    if (bluetoothPrinter.isConnected()) {
+      console.log("Printer already connected");
+      return true;
+    }
+
+    setIsConnecting(true);
+    try {
+      // First try to auto-reconnect to a previously connected printer
+      const reconnected = await bluetoothPrinter.autoReconnect();
+      if (reconnected) {
+        setIsConnected(true);
+        console.log("✅ Auto-reconnected to saved printer");
+        return true;
+      }
+
+      // If no saved printer, try to discover and connect to any available printer
+      console.log("No saved printer found, attempting auto-discovery...");
+      
+      // Note: Web Bluetooth requires user gesture for requestDevice()
+      // So we cannot automatically connect without user interaction
+      // This is a security limitation of the Web Bluetooth API
+      
+      return false;
+    } catch (error: any) {
+      console.error("Auto-discovery failed:", error);
+      setIsConnected(false);
+      return false;
+    } finally {
+      setIsConnecting(false);
+    }
+  }, []);
+
+  /**
    * Check if Bluetooth printing is supported
    */
   const isSupported = useCallback(() => {
@@ -165,5 +206,6 @@ export function useBluetoothPrinter() {
     printTest,
     printInvoice,
     printKOT,
+    autoDiscoverAndConnect,
   };
 }

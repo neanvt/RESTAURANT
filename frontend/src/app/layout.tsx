@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import { Toaster } from "sonner";
 import PWAInit from "@/components/PWAInit";
 import InstallPWA from "@/components/InstallPWA";
+import BluetoothPrinterManager from "@/components/BluetoothPrinterManager";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -72,6 +73,7 @@ export default function RootLayout({
         <PWAInit />
         {children}
         <InstallPWA />
+        <BluetoothPrinterManager />
         <Toaster position="top-center" richColors />
       </body>
     </html>
