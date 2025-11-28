@@ -5,24 +5,33 @@ import Outlet from "../models/Outlet";
 import Counter from "../models/Counter";
 import QRCode from "qrcode";
 
-// Generate invoice number - uses atomic counter to prevent race conditions
+// Generate invoice number - resets annually on April 1st
 const generateInvoiceNumber = async (outletId: string): Promise<string> => {
   const today = new Date();
+  const year = today.getFullYear();
+  const month = today.getMonth() + 1; // 1-12
 
-  const dateStr = today.toISOString().split("T")[0]; // YYYY-MM-DD
-  const counterId = `invoice_${outletId}_${dateStr}`;
+  // Calculate financial year (April 1st to March 31st)
+  const financialYearStart = month < 4 ? year - 1 : year;
+  const financialYearEnd = financialYearStart + 1;
+
+  // Counter ID based on financial year (resets annually)
+  const counterId = `invoice_${outletId}_FY${financialYearStart}-${financialYearEnd}`;
+  const financialYearDate = new Date(
+    `${financialYearStart}-04-01T00:00:00.000Z`
+  );
 
   try {
     console.log(
-      `🔄 Generating invoice number for outlet ${outletId} on ${dateStr}`
+      `🔄 Generating invoice number for outlet ${outletId} (FY: ${financialYearStart}-${financialYearEnd})`
     );
 
     // Use findOneAndUpdate with upsert to atomically increment the counter
+    // IMPORTANT: The counter is tied to the financial year to reset annually
     const counter = await Counter.findOneAndUpdate(
-      { _id: counterId },
+      { _id: counterId, date: financialYearDate },
       {
         $inc: { sequence: 1 },
-        $setOnInsert: { date: today },
       },
       {
         upsert: true,
@@ -31,12 +40,30 @@ const generateInvoiceNumber = async (outletId: string): Promise<string> => {
       }
     );
 
+    // Validate that the counter is for the correct financial year
+    if (counter && counter.date) {
+      const counterYear = counter.date.getFullYear();
+      if (counterYear !== financialYearStart) {
+        throw new Error(
+          `Invoice counter year mismatch: expected FY${financialYearStart}, got FY${counterYear}`
+        );
+      }
+    }
+
     if (!counter) {
       throw new Error("Failed to generate invoice counter");
     }
 
-    console.log(`✅ Generated invoice number: ${counter.sequence}`);
-    return counter.sequence.toString();
+    // Format: 001, 002, 003, etc. (simple sequential, resets annually on April 1st)
+    const formattedNumber = counter.sequence.toString().padStart(3, "0");
+    const fyDisplay = `${financialYearStart
+      .toString()
+      .slice(-2)}-${financialYearEnd.toString().slice(-2)}`;
+
+    console.log(
+      `✅ Generated invoice number: ${formattedNumber} for outlet ${outletId} (FY: ${fyDisplay}, sequence: ${counter.sequence})`
+    );
+    return formattedNumber;
   } catch (error: any) {
     console.error(`❌ Error generating invoice number:`, error);
     throw new Error(`Failed to generate invoice number: ${error.message}`);
@@ -137,27 +164,69 @@ export const createInvoice = async (
     // Calculate final total
     const finalTotal = order.total - discountAmount;
 
-    // Generate invoice number
-    const invoiceNumber = await generateInvoiceNumber(outletId.toString());
+    // Generate invoice number and create invoice with retry logic
+    let invoice;
+    let invoiceNumber: string = "";
+    let retries = 5;
+    let lastError;
 
-    // Create invoice - all orders are prepaid, so mark as paid immediately
-    const invoice = await Invoice.create({
-      outletId,
-      orderId: order._id,
-      invoiceNumber,
-      items: order.items,
-      subtotal: order.subtotal,
-      taxAmount: order.taxAmount,
-      discount: discountData,
-      total: finalTotal,
-      customer: order.customer,
-      paymentMethod,
-      paymentStatus: "paid",
-      paidAmount: finalTotal,
-      paidAt: new Date(),
-      notes: order.notes,
-      createdBy: req.user!.userId,
-    });
+    while (retries > 0) {
+      try {
+        invoiceNumber = await generateInvoiceNumber(outletId.toString());
+
+        // Create invoice - all orders are prepaid, so mark as paid immediately
+        invoice = await Invoice.create({
+          outletId,
+          orderId: order._id,
+          invoiceNumber,
+          items: order.items,
+          subtotal: order.subtotal,
+          taxAmount: order.taxAmount,
+          discount: discountData,
+          total: finalTotal,
+          customer: order.customer,
+          paymentMethod,
+          paymentStatus: "paid",
+          paidAmount: finalTotal,
+          paidAt: new Date(),
+          notes: order.notes,
+          createdBy: req.user!.userId,
+        });
+
+        console.log(`✅ Invoice created successfully: ${invoiceNumber}`);
+        break; // Success, exit loop
+      } catch (error: any) {
+        lastError = error;
+
+        // Check if it's a duplicate key error
+        if (error.code === 11000) {
+          retries--;
+          console.log(
+            `⚠️ Duplicate key error detected (${error.message}), retrying... (${retries} attempts left)`
+          );
+
+          if (retries > 0) {
+            // Wait with exponential backoff + random jitter
+            const backoffMs = 100 * (6 - retries) + Math.random() * 50;
+            await new Promise((resolve) => setTimeout(resolve, backoffMs));
+            continue;
+          } else {
+            console.error(
+              "❌ Failed after all retries, duplicate key persists"
+            );
+          }
+        }
+
+        // If not a duplicate error or out of retries, throw
+        console.error("❌ Invoice creation failed with error:", error);
+        throw error;
+      }
+    }
+
+    if (!invoice) {
+      console.error("❌ Invoice creation failed after all retries");
+      throw lastError || new Error("Failed to create invoice after retries");
+    }
 
     // Update order status
     order.status = "completed";

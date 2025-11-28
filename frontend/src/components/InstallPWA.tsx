@@ -104,6 +104,7 @@ export default function InstallPWA() {
       promptCaptured = true;
       const promptEvent = e as BeforeInstallPromptEvent;
       setDeferredPrompt(promptEvent);
+      setCanShowInstallPrompt(true);
       // Show banner immediately when prompt is available
       setShowInstallBanner(true);
     };

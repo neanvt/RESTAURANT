@@ -372,22 +372,30 @@ function CreateOrderPageComponent() {
         };
 
         order = await createOrder(orderData);
+        // Handle both id and _id for compatibility
         orderId = order?.id || order?._id;
 
         console.log("Order created - full response:", order);
-        console.log("Order ID:", order?.id);
-        console.log("Order _id:", order?._id);
+        console.log("Order ID:", orderId);
 
         // Check if order was created successfully
         if (!order || !orderId) {
           console.error("Order object:", order);
-          throw new Error("Order created but ID is missing");
+          throw new Error(
+            `Order created but ID is missing. Order: ${JSON.stringify(order)}`
+          );
         }
+
+        console.log(`✅ Order created successfully with ID: ${orderId}`);
       }
 
       if (action === "kot") {
+        // Ensure we have a valid MongoDB ObjectId format
+        const validOrderId = orderId.toString();
+        console.log(`📋 Generating KOT for order: ${validOrderId}`);
+
         // Generate KOT and trigger printing
-        const result = await generateKOT(orderId);
+        const result = await generateKOT(validOrderId);
         console.log("KOT generated:", result);
 
         const kotId = result.kot?.id || result.kot?._id;
@@ -522,7 +530,29 @@ function CreateOrderPageComponent() {
       }
     } catch (error: any) {
       console.error("Order creation error:", error);
-      toast.error(error.message || "Failed to create order");
+      console.error("Error details:", {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        code: error.code,
+      });
+
+      // Handle specific error cases
+      let errorMessage = "Failed to create order";
+
+      if (error.code === "SKIP_INVALID_OUTLET") {
+        errorMessage = "Invalid outlet selected. Please select a valid outlet.";
+      } else if (error.code === "SKIP_REPORTS_NO_CONTEXT") {
+        errorMessage = "Missing authentication or outlet context.";
+      } else if (error.response?.data?.error?.message) {
+        errorMessage = error.response.data.error.message;
+      } else if (error.message && error.message !== "Z") {
+        errorMessage = error.message;
+      } else if (error.response?.status === 500) {
+        errorMessage = "Server error. Please try again.";
+      }
+
+      toast.error(errorMessage);
     } finally {
       setIsProcessing(false);
     }

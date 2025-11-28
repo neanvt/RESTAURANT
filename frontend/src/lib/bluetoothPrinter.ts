@@ -204,10 +204,10 @@ class BluetoothPrinterService {
       const silentConnected = await this.attemptSilentConnection();
       if (silentConnected) return true;
     } catch (error) {
-      console.log("Silent connection failed:", error);
+      // Silently fail - expected behavior
     }
 
-    console.log("All auto-connection strategies failed");
+    // All auto-connection strategies exhausted
     return false;
   }
 
@@ -324,7 +324,6 @@ class BluetoothPrinterService {
   private async attemptSilentConnection(): Promise<boolean> {
     // Check if we can attempt background discovery
     if (!navigator.bluetooth) {
-      console.log("Bluetooth not available for silent connection");
       return false;
     }
 
@@ -332,19 +331,11 @@ class BluetoothPrinterService {
       // Try to get availability first
       const available = await navigator.bluetooth.getAvailability();
       if (!available) {
-        console.log("Bluetooth not available on device");
         return false;
       }
 
-      // Attempt to connect using watchAdvertisements if available
-      // This is a more advanced approach for newer Chrome versions
-      console.log("Attempting silent connection via advertisement watching...");
-
-      // For now, we'll return false as true silent connection
-      // requires the device to be pre-paired or use experimental APIs
-      console.log(
-        "Silent connection not available - requires user interaction for security"
-      );
+      // Silent connection requires the device to be pre-paired or use experimental APIs
+      // Not available for security reasons in standard Web Bluetooth API
       return false;
     } catch (error) {
       console.log("Silent connection attempt failed:", error);

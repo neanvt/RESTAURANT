@@ -6,32 +6,40 @@ import Item from "../models/Item";
 import Counter from "../models/Counter";
 import staffService from "../services/staffService";
 
-// Generate order number - Format: 015/25-26
+// Generate order number - Format: 001/25-26 (resets annually on April 1st)
 const generateOrderNumber = async (outletId: string): Promise<string> => {
   // Get current date in local timezone
   const today = new Date();
   const year = today.getFullYear();
-  const month = String(today.getMonth() + 1).padStart(2, "0");
-  const day = String(today.getDate()).padStart(2, "0");
-  const dateStr = `${year}-${month}-${day}`; // YYYY-MM-DD in local time
+  const month = today.getMonth() + 1; // 1-12
 
-  const counterId = `order_${outletId}_${dateStr}`;
+  // Calculate financial year (April 1st to March 31st)
+  // If current month is Jan-Mar, financial year started last year
+  const financialYearStart = month < 4 ? year - 1 : year;
+  const financialYearEnd = financialYearStart + 1;
+
+  // Counter ID based on financial year (resets annually)
+  const counterId = `order_${outletId}_FY${financialYearStart}-${financialYearEnd}`;
+  const financialYearDate = new Date(
+    `${financialYearStart}-04-01T00:00:00.000Z`
+  );
 
   try {
     console.log(
-      `🔄 Generating order number for outlet ${outletId} on ${dateStr}`
+      `🔄 Generating order number for outlet ${outletId} (FY: ${financialYearStart}-${financialYearEnd})`
     );
 
-    // Get outlet to fetch financial year
-    const outlet = await require("../models/Outlet").default.findById(outletId);
-    const financialYear = outlet?.settings?.financialYearStart || "26-27";
+    // Format financial year as YY-YY (e.g., 25-26 for 2025-2026)
+    const fyStartShort = financialYearStart.toString().slice(-2);
+    const fyEndShort = financialYearEnd.toString().slice(-2);
+    const financialYear = `${fyStartShort}-${fyEndShort}`;
 
     // Use findOneAndUpdate with upsert to atomically increment the counter
+    // IMPORTANT: The counter is tied to the financial year to reset annually
     const counter = await Counter.findOneAndUpdate(
-      { _id: counterId },
+      { _id: counterId, date: financialYearDate },
       {
         $inc: { sequence: 1 },
-        $setOnInsert: { date: new Date(`${dateStr}T00:00:00.000Z`) },
       },
       {
         upsert: true,
@@ -40,17 +48,28 @@ const generateOrderNumber = async (outletId: string): Promise<string> => {
       }
     );
 
+    // Validate that the counter is for the correct financial year
+    if (counter && counter.date) {
+      const counterYear = counter.date.getFullYear();
+      if (counterYear !== financialYearStart) {
+        throw new Error(
+          `Counter year mismatch: expected FY${financialYearStart}, got FY${counterYear}`
+        );
+      }
+    }
+
     if (!counter) {
       throw new Error("Failed to generate counter");
     }
 
-    // Format: 015/25-26
+    // Format: 001/25-26, 002/25-26, etc. (simple sequential with financial year)
+    // Note: Counter resets annually on April 1st
     const formattedNumber = `${counter.sequence
       .toString()
       .padStart(3, "0")}/${financialYear}`;
 
     console.log(
-      `✅ Generated order number: ${formattedNumber} for outlet ${outletId}`
+      `✅ Generated order number: ${formattedNumber} for outlet ${outletId} (FY: ${financialYear}, sequence: ${counter.sequence})`
     );
     return formattedNumber;
   } catch (error: any) {
@@ -70,6 +89,7 @@ const generateKOTNumber = async (outletId: string): Promise<string> => {
   const dateStr = `${year}-${month}-${day}`; // YYYY-MM-DD in local time
 
   const counterId = `kot_${outletId}_${dateStr}`;
+  const todayDate = new Date(`${dateStr}T00:00:00.000Z`);
 
   try {
     console.log(
@@ -77,11 +97,11 @@ const generateKOTNumber = async (outletId: string): Promise<string> => {
     );
 
     // Use findOneAndUpdate with upsert to atomically increment the counter
+    // IMPORTANT: The counter is tied to the specific date to prevent conflicts
     const counter = await Counter.findOneAndUpdate(
-      { _id: counterId },
+      { _id: counterId, date: todayDate },
       {
         $inc: { sequence: 1 },
-        $setOnInsert: { date: new Date(`${dateStr}T00:00:00.000Z`) },
       },
       {
         upsert: true,
@@ -90,14 +110,26 @@ const generateKOTNumber = async (outletId: string): Promise<string> => {
       }
     );
 
+    // Validate that the counter is for today's date
+    if (counter && counter.date) {
+      const counterDateStr = counter.date.toISOString().split("T")[0];
+      if (counterDateStr !== dateStr) {
+        throw new Error(
+          `KOT counter date mismatch: expected ${dateStr}, got ${counterDateStr}`
+        );
+      }
+    }
+
     if (!counter) {
       throw new Error("Failed to generate KOT counter");
     }
 
-    // Simple format: 001, 002, 003, etc.
+    // Format: 001, 002, 003, etc. (simple sequential, resets daily)
     const formattedNumber = counter.sequence.toString().padStart(3, "0");
 
-    console.log(`✅ Generated KOT number: ${formattedNumber}`);
+    console.log(
+      `✅ Generated KOT number: ${formattedNumber} for outlet ${outletId} (date: ${dateStr}, sequence: ${counter.sequence})`
+    );
     return formattedNumber;
   } catch (error: any) {
     console.error(`❌ Error generating KOT number:`, error);
@@ -210,7 +242,7 @@ export const createOrder = async (
     // Generate order number and create order with retry logic for duplicate key errors
     let order;
     let orderNumber: string = "";
-    let retries = 3;
+    let retries = 5; // Increased retries for better reliability
     let lastError;
 
     while (retries > 0) {
@@ -231,32 +263,38 @@ export const createOrder = async (
           createdBy: req.user!.userId,
         });
 
+        console.log(`✅ Order created successfully: ${orderNumber}`);
         break; // Success, exit loop
       } catch (error: any) {
         lastError = error;
 
         // Check if it's a duplicate key error
-        if (error.code === 11000 && error.message.includes("orderNumber")) {
+        if (error.code === 11000) {
           retries--;
           console.log(
-            `Duplicate order number detected, retrying... (${retries} attempts left)`
+            `⚠️ Duplicate key error detected (${error.message}), retrying... (${retries} attempts left)`
           );
 
           if (retries > 0) {
-            // Wait a bit before retrying (exponential backoff)
-            await new Promise((resolve) =>
-              setTimeout(resolve, 100 * (4 - retries))
-            );
+            // Wait with exponential backoff + random jitter
+            const backoffMs = 100 * (6 - retries) + Math.random() * 50;
+            await new Promise((resolve) => setTimeout(resolve, backoffMs));
             continue;
+          } else {
+            console.error(
+              "❌ Failed after all retries, duplicate key persists"
+            );
           }
         }
 
         // If not a duplicate error or out of retries, throw
+        console.error("❌ Order creation failed with error:", error);
         throw error;
       }
     }
 
     if (!order) {
+      console.error("❌ Order creation failed after all retries");
       throw lastError || new Error("Failed to create order after retries");
     }
 
@@ -297,7 +335,10 @@ export const createOrder = async (
 
     res.status(201).json({
       success: true,
-      data: order,
+      data: {
+        ...order.toObject(),
+        id: order._id, // Add id field for frontend compatibility
+      },
     });
   } catch (error: any) {
     console.error("❌ Order creation error:", error);
@@ -545,7 +586,7 @@ export const generateKOT = async (
     // Generate KOT number and create KOT with retry logic
     let kot;
     let kotNumber: string = "";
-    let kotRetries = 3;
+    let kotRetries = 5;
     let lastKotError;
 
     while (kotRetries > 0) {
@@ -569,21 +610,27 @@ export const generateKOT = async (
           createdBy: req.user!.userId,
         });
 
+        console.log(`✅ KOT created successfully: ${kotNumber}`);
         break; // Success
       } catch (error: any) {
         lastKotError = error;
 
-        if (error.code === 11000 && error.message.includes("kotNumber")) {
+        if (error.code === 11000) {
           kotRetries--;
-          console.log(`Duplicate KOT number, retrying... (${kotRetries} left)`);
+          console.log(
+            `⚠️ Duplicate KOT key error (${error.message}), retrying... (${kotRetries} attempts left)`
+          );
 
           if (kotRetries > 0) {
-            await new Promise((resolve) =>
-              setTimeout(resolve, 100 * (4 - kotRetries))
-            );
+            const backoffMs = 100 * (6 - kotRetries) + Math.random() * 50;
+            await new Promise((resolve) => setTimeout(resolve, backoffMs));
             continue;
+          } else {
+            console.error("❌ Failed after all KOT retries");
           }
         }
+
+        console.error("❌ KOT creation failed with error:", error);
 
         throw error;
       }

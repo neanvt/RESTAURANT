@@ -199,16 +199,24 @@ export default function OutletSelectorModal({
                         {/* Actions */}
                         <div className="flex items-center gap-2 ml-auto">
                           {/* Edit Button */}
-                          <button
+                          <div
                             onClick={(e) => {
                               e.stopPropagation();
                               handleEditOutlet(outlet._id);
                             }}
-                            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                            className="p-2 hover:bg-gray-100 rounded-full transition-colors cursor-pointer"
                             title="Edit outlet"
+                            role="button"
+                            tabIndex={0}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" || e.key === " ") {
+                                e.stopPropagation();
+                                handleEditOutlet(outlet._id);
+                              }
+                            }}
                           >
                             <Settings className="h-4 w-4 text-gray-600" />
-                          </button>
+                          </div>
 
                           {/* Current Badge */}
                           {isCurrent && (
