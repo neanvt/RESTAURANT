@@ -202,7 +202,10 @@ export default function InstallPWA() {
   return (
     <>
       {/* Install Banner - Compact */}
-      <div className="fixed bottom-20 left-4 right-4 z-50 animate-in slide-in-from-bottom duration-300 max-w-md mx-auto">
+      <div
+        className="fixed bottom-20 left-4 right-4 z-50 animate-in slide-in-from-bottom duration-300 max-w-md mx-auto"
+        suppressHydrationWarning
+      >
         <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl shadow-2xl p-3">
           <div className="absolute top-2 right-2 flex gap-1">
             <button

@@ -250,7 +250,10 @@ export default function DashboardPage() {
                     </div>
 
                     {/* Orders */}
-                    <div>
+                    <button
+                      onClick={() => router.push("/orders")}
+                      className="text-left hover:bg-white/50 p-2 rounded-lg transition-colors"
+                    >
                       <div className="text-sm text-gray-600 mb-1">
                         Today's orders
                       </div>
@@ -260,7 +263,7 @@ export default function DashboardPage() {
                       <div className="text-xs text-gray-500 mt-1">
                         {dashboardStats?.yesterday.orders || 0} (Yesterday's)
                       </div>
-                    </div>
+                    </button>
                   </div>
 
                   {/* Insights Link */}
