@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import { Types } from "mongoose";
 import Customer from "../models/Customer";
 import Order from "../models/Order";
 
@@ -38,6 +39,9 @@ export const createCustomer = async (
       return;
     }
 
+    // Convert userId string to ObjectId
+    const createdByObjectId = new Types.ObjectId(req.user!.userId);
+
     const customer = await Customer.create({
       outlet: req.outlet._id,
       name,
@@ -48,7 +52,7 @@ export const createCustomer = async (
       anniversary,
       tags,
       notes,
-      createdBy: req.user!.userId,
+      createdBy: createdByObjectId,
     });
 
     res.status(201).json({

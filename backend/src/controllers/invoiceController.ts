@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import { Types } from "mongoose";
 import Invoice from "../models/Invoice";
 import Order from "../models/Order";
 import Outlet from "../models/Outlet";
@@ -29,14 +30,17 @@ const generateInvoiceNumber = async (outletId: string): Promise<string> => {
     // Use findOneAndUpdate with upsert to atomically increment the counter
     // IMPORTANT: The counter is tied to the financial year to reset annually
     const counter = await Counter.findOneAndUpdate(
-      { _id: counterId, date: financialYearDate },
+      { _id: counterId },
       {
         $inc: { sequence: 1 },
+        $setOnInsert: {
+          date: financialYearDate,
+          type: "invoice",
+        },
       },
       {
         upsert: true,
         new: true,
-        setDefaultsOnInsert: true,
       }
     );
 
@@ -102,6 +106,15 @@ export const createInvoice = async (
       res.status(400).json({
         success: false,
         error: { message: "No outlet selected" },
+      });
+      return;
+    }
+
+    // Validate user authentication
+    if (!req.user || !req.user.userId) {
+      res.status(401).json({
+        success: false,
+        error: { message: "User not authenticated" },
       });
       return;
     }
@@ -174,6 +187,9 @@ export const createInvoice = async (
       try {
         invoiceNumber = await generateInvoiceNumber(outletId.toString());
 
+        // Convert userId string to ObjectId
+        const createdByObjectId = new Types.ObjectId(req.user!.userId);
+
         // Create invoice - all orders are prepaid, so mark as paid immediately
         invoice = await Invoice.create({
           outletId,
@@ -190,7 +206,7 @@ export const createInvoice = async (
           paidAmount: finalTotal,
           paidAt: new Date(),
           notes: order.notes,
-          createdBy: req.user!.userId,
+          createdBy: createdByObjectId,
         });
 
         console.log(`✅ Invoice created successfully: ${invoiceNumber}`);

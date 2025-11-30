@@ -37,14 +37,17 @@ const generateOrderNumber = async (outletId: string): Promise<string> => {
     // Use findOneAndUpdate with upsert to atomically increment the counter
     // IMPORTANT: The counter is tied to the financial year to reset annually
     const counter = await Counter.findOneAndUpdate(
-      { _id: counterId, date: financialYearDate },
+      { _id: counterId },
       {
         $inc: { sequence: 1 },
+        $setOnInsert: {
+          date: financialYearDate,
+          type: "order",
+        },
       },
       {
         upsert: true,
         new: true,
-        setDefaultsOnInsert: true,
       }
     );
 
@@ -99,14 +102,17 @@ const generateKOTNumber = async (outletId: string): Promise<string> => {
     // Use findOneAndUpdate with upsert to atomically increment the counter
     // IMPORTANT: The counter is tied to the specific date to prevent conflicts
     const counter = await Counter.findOneAndUpdate(
-      { _id: counterId, date: todayDate },
+      { _id: counterId },
       {
         $inc: { sequence: 1 },
+        $setOnInsert: {
+          date: todayDate,
+          type: "kot",
+        },
       },
       {
         upsert: true,
         new: true,
-        setDefaultsOnInsert: true,
       }
     );
 
@@ -183,6 +189,15 @@ export const createOrder = async (
       return;
     }
 
+    // Validate user authentication
+    if (!req.user || !req.user.userId) {
+      res.status(401).json({
+        success: false,
+        error: { message: "User not authenticated" },
+      });
+      return;
+    }
+
     if (!items || items.length === 0) {
       res.status(400).json({
         success: false,
@@ -249,6 +264,9 @@ export const createOrder = async (
       try {
         orderNumber = await generateOrderNumber(outletId.toString());
 
+        // Convert userId string to ObjectId
+        const createdByObjectId = new Types.ObjectId(req.user!.userId);
+
         order = await Order.create({
           outletId,
           orderNumber,
@@ -260,7 +278,7 @@ export const createOrder = async (
           customer,
           tableNumber,
           notes,
-          createdBy: req.user!.userId,
+          createdBy: createdByObjectId,
         });
 
         console.log(`✅ Order created successfully: ${orderNumber}`);
@@ -271,24 +289,32 @@ export const createOrder = async (
         // Check if it's a duplicate key error
         if (error.code === 11000) {
           retries--;
+          console.error(
+            `⚠️ Duplicate order number detected: ${orderNumber}. This order number already exists in the database.`
+          );
           console.log(
-            `⚠️ Duplicate key error detected (${error.message}), retrying... (${retries} attempts left)`
+            `⚠️ Duplicate key error (${error.message}), retrying with new number... (${retries} attempts left)`
           );
 
           if (retries > 0) {
-            // Wait with exponential backoff + random jitter
+            // Wait with exponential backoff + random jitter before generating new number
             const backoffMs = 100 * (6 - retries) + Math.random() * 50;
             await new Promise((resolve) => setTimeout(resolve, backoffMs));
             continue;
           } else {
             console.error(
-              "❌ Failed after all retries, duplicate key persists"
+              `❌ Failed after all retries. Last attempted order number: ${orderNumber}`
+            );
+            console.error(
+              "❌ Database may have inconsistent state. Please check the orders collection."
             );
           }
         }
 
         // If not a duplicate error or out of retries, throw
         console.error("❌ Order creation failed with error:", error);
+        console.error("Error code:", error.code);
+        console.error("Error name:", error.name);
         throw error;
       }
     }
@@ -349,11 +375,21 @@ export const createOrder = async (
       stack: error.stack,
     });
 
+    // Provide more helpful error messages for duplicate key errors
+    let errorMessage = error.message || "Failed to create order";
+    let errorCode = error.code;
+
+    if (error.code === 11000) {
+      errorMessage =
+        "Unable to create order due to duplicate order number. This may indicate a database synchronization issue. Please try again.";
+      errorCode = "DUPLICATE_ORDER_NUMBER";
+    }
+
     res.status(500).json({
       success: false,
       error: {
-        message: error.message || "Failed to create order",
-        code: error.code,
+        message: errorMessage,
+        code: errorCode,
         details:
           process.env.NODE_ENV === "development" ? error.stack : undefined,
       },
@@ -388,8 +424,18 @@ export const getOrders = async (req: Request, res: Response): Promise<void> => {
     }
     if (startDate || endDate) {
       filter.createdAt = {};
-      if (startDate) filter.createdAt.$gte = new Date(startDate as string);
-      if (endDate) filter.createdAt.$lte = new Date(endDate as string);
+      if (startDate) {
+        // Set to start of day (00:00:00.000)
+        const start = new Date(startDate as string);
+        start.setHours(0, 0, 0, 0);
+        filter.createdAt.$gte = start;
+      }
+      if (endDate) {
+        // Set to end of day (23:59:59.999) to include all orders on that day
+        const end = new Date(endDate as string);
+        end.setHours(23, 59, 59, 999);
+        filter.createdAt.$lte = end;
+      }
     }
 
     const orders = await Order.find(filter)
@@ -562,6 +608,15 @@ export const generateKOT = async (
       return;
     }
 
+    // Validate user authentication
+    if (!req.user || !req.user.userId) {
+      res.status(401).json({
+        success: false,
+        error: { message: "User not authenticated" },
+      });
+      return;
+    }
+
     const order = await Order.findOne({ _id: id, outletId });
 
     if (!order) {
@@ -593,6 +648,17 @@ export const generateKOT = async (
       try {
         kotNumber = await generateKOTNumber(outletId.toString());
 
+        // Convert userId string to ObjectId
+        const createdByObjectId = new Types.ObjectId(req.user!.userId);
+
+        console.log(`🔍 Creating KOT with data:`, {
+          outletId: outletId.toString(),
+          orderId: (order._id as Types.ObjectId).toString(),
+          kotNumber,
+          itemCount: order.items.length,
+          createdBy: createdByObjectId.toString(),
+        });
+
         kot = await KOT.create({
           outletId,
           orderId: order._id,
@@ -607,7 +673,7 @@ export const generateKOT = async (
           status: "pending",
           tableNumber: order.tableNumber,
           notes: order.notes,
-          createdBy: req.user!.userId,
+          createdBy: createdByObjectId,
         });
 
         console.log(`✅ KOT created successfully: ${kotNumber}`);

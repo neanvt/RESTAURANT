@@ -12,44 +12,44 @@ router.use(attachCurrentOutlet);
 /**
  * @route   GET /api/staff
  * @desc    Get all staff for current outlet
- * @access  Private (Admin, Secondary Admin)
+ * @access  Private (Admin, Secondary Admin, Staff)
  */
 router.get(
   "/",
-  authorize("primary_admin", "secondary_admin"),
+  authorize("primary_admin", "secondary_admin", "staff"),
   staffController.getStaff
 );
 
 /**
  * @route   GET /api/staff/activity
  * @desc    Get staff activity log
- * @access  Private (Admin, Secondary Admin)
+ * @access  Private (Admin, Secondary Admin, Staff)
  */
 router.get(
   "/activity",
-  authorize("primary_admin", "secondary_admin"),
+  authorize("primary_admin", "secondary_admin", "staff"),
   staffController.getStaffActivity
 );
 
 /**
  * @route   GET /api/staff/:id
  * @desc    Get staff member by ID
- * @access  Private (Admin, Secondary Admin)
+ * @access  Private (Admin, Secondary Admin, Staff)
  */
 router.get(
   "/:id",
-  authorize("primary_admin", "secondary_admin"),
+  authorize("primary_admin", "secondary_admin", "staff"),
   staffController.getStaffById
 );
 
 /**
  * @route   GET /api/staff/:id/activity
  * @desc    Get staff member's activity
- * @access  Private (Admin, Secondary Admin)
+ * @access  Private (Admin, Secondary Admin, Staff)
  */
 router.get(
   "/:id/activity",
-  authorize("primary_admin", "secondary_admin"),
+  authorize("primary_admin", "secondary_admin", "staff"),
   staffController.getStaffMemberActivity
 );
 
