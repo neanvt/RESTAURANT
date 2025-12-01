@@ -1,5 +1,6 @@
 import axios from "axios";
 import { getAccessToken, clearAuthTokens } from "@/lib/auth-token";
+import { publicApi } from "@/lib/api/axios-config";
 import {
   DashboardStats,
   SalesReport,
@@ -141,15 +142,19 @@ export const reportsApi = {
 
   // Get menu print data (supports public access with outletId)
   getMenuPrintData: async (outletId?: string): Promise<any> => {
-    const url = outletId ? `/reports/menu-print?outletId=${outletId}` : "/reports/menu-print";
-    const response = await api.get(url);
+    const url = outletId
+      ? `/reports/menu-print?outletId=${outletId}`
+      : "/reports/menu-print";
+    const response = await publicApi.get(url);
     return response.data.data;
   },
 
   // Get full menu data (including unavailable items, supports public access with outletId)
   getFullMenuData: async (outletId?: string): Promise<any> => {
-    const url = outletId ? `/reports/menu-full?outletId=${outletId}` : "/reports/menu-full";
-    const response = await api.get(url);
+    const url = outletId
+      ? `/reports/menu-full?outletId=${outletId}`
+      : "/reports/menu-full";
+    const response = await publicApi.get(url);
     return response.data.data;
   },
 };

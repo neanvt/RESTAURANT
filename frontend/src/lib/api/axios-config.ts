@@ -135,4 +135,9 @@ api.interceptors.response.use(
   }
 );
 
+// Create public API instance without authentication
+export const publicApi = axios.create({
+  baseURL: `${API_URL}/api`,
+});
+
 export default api;
