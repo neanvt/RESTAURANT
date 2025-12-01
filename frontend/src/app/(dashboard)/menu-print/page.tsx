@@ -295,7 +295,29 @@ export default function MenuPrintPage() {
         @media print {
           @page {
             size: A4 portrait;
-            margin: 0.3cm;
+            margin: 0.5cm 1cm;
+          }
+
+          /* Hide everything except the menu content */
+          body * {
+            visibility: hidden;
+          }
+
+          .print-menu-container,
+          .print-menu-container * {
+            visibility: visible;
+          }
+
+          .print-menu-container {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            padding: 0 1cm !important;
+            background: white !important;
+            margin: 0 !important;
+            min-height: auto !important;
+            box-sizing: border-box;
           }
 
           body {
@@ -303,12 +325,6 @@ export default function MenuPrintPage() {
             -webkit-print-color-adjust: exact;
             margin: 0;
             padding: 0;
-          }
-
-          .print-menu-container {
-            padding: 0 !important;
-            background: white !important;
-            margin: 0 !important;
           }
 
           .menu-header,
@@ -337,6 +353,11 @@ export default function MenuPrintPage() {
 
           img {
             image-rendering: -webkit-optimize-contrast;
+          }
+
+          /* Remove shadows and unnecessary spacing in print */
+          .shadow-lg {
+            box-shadow: none !important;
           }
         }
 

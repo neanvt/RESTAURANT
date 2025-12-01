@@ -2,7 +2,14 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 // Define public routes that don't require authentication
-const publicRoutes = ["/login", "/verify", "/"];
+const publicRoutes = [
+  "/login",
+  "/verify",
+  "/",
+  "/menu-select",
+  "/menu-current",
+  "/menu-full",
+];
 
 // Define auth routes that authenticated users shouldn't access
 const authRoutes = ["/login", "/verify"];
@@ -18,7 +25,7 @@ export function middleware(request: NextRequest) {
   // Allow all traffic for now - auth check will be done client-side
   // In production, you should implement proper cookie-based auth
   // For development with localStorage, we skip middleware auth checks
-  
+
   // Just allow everything through
   return NextResponse.next();
 }
