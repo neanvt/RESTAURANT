@@ -139,15 +139,17 @@ export const reportsApi = {
     return response.data.data;
   },
 
-  // Get menu print data
-  getMenuPrintData: async (): Promise<any> => {
-    const response = await api.get("/reports/menu-print");
+  // Get menu print data (supports public access with outletId)
+  getMenuPrintData: async (outletId?: string): Promise<any> => {
+    const url = outletId ? `/reports/menu-print?outletId=${outletId}` : "/reports/menu-print";
+    const response = await api.get(url);
     return response.data.data;
   },
 
-  // Get full menu data (including unavailable items)
-  getFullMenuData: async (): Promise<any> => {
-    const response = await api.get("/reports/menu-full");
+  // Get full menu data (including unavailable items, supports public access with outletId)
+  getFullMenuData: async (outletId?: string): Promise<any> => {
+    const url = outletId ? `/reports/menu-full?outletId=${outletId}` : "/reports/menu-full";
+    const response = await api.get(url);
     return response.data.data;
   },
 };

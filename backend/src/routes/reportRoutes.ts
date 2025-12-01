@@ -15,11 +15,15 @@ import { attachCurrentOutlet } from "../middleware/outletMiddleware";
 
 const router = express.Router();
 
-// All routes require authentication and current outlet
+// Public menu routes (no authentication required)
+router.get("/menu-print", getMenuPrintData);
+router.get("/menu-full", getFullMenuData);
+
+// All other routes require authentication and current outlet
 router.use(authenticate);
 router.use(attachCurrentOutlet);
 
-// Report routes
+// Protected report routes
 router.get("/dashboard", getDashboardStats);
 router.get("/sales", getSalesReport);
 router.get("/items", getItemSalesReport);
@@ -27,7 +31,5 @@ router.get("/categories", getCategorySalesReport);
 router.get("/payment-methods", getPaymentMethodReport);
 router.get("/top-items", getTopSellingItems);
 router.get("/customers", getCustomerAnalytics);
-router.get("/menu-print", getMenuPrintData);
-router.get("/menu-full", getFullMenuData);
 
 export default router;

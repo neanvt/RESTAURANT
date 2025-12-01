@@ -53,7 +53,9 @@ export default function MenuCurrentPage() {
   const fetchMenuData = async () => {
     try {
       setLoading(true);
-      const data = await reportsApi.getMenuPrintData();
+      // Get outletId from localStorage (set by menu-select page)
+      const outletId = localStorage.getItem("publicOutletId") || undefined;
+      const data = await reportsApi.getMenuPrintData(outletId);
       setMenuData(data);
     } catch (error: any) {
       console.error("Failed to fetch menu data:", error);

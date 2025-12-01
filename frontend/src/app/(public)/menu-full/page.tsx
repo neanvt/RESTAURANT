@@ -54,7 +54,9 @@ export default function MenuFullPage() {
   const fetchMenuData = async () => {
     try {
       setLoading(true);
-      const data = await reportsApi.getFullMenuData();
+      // Get outletId from localStorage (set by menu-select page)
+      const outletId = localStorage.getItem("publicOutletId") || undefined;
+      const data = await reportsApi.getFullMenuData(outletId);
       setMenuData(data);
     } catch (error: any) {
       console.error("Failed to fetch menu data:", error);

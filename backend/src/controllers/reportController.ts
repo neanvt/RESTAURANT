@@ -4,6 +4,7 @@ import Invoice from "../models/Invoice";
 import Customer from "../models/Customer";
 import Item from "../models/Item";
 import Category from "../models/Category";
+import Outlet from "../models/Outlet";
 import mongoose from "mongoose";
 
 /**
@@ -678,10 +679,21 @@ export const getCustomerAnalytics = async (req: Request, res: Response) => {
  */
 export const getMenuPrintData = async (req: Request, res: Response) => {
   try {
-    const outletId = req.outlet._id;
+    // Support both authenticated (req.outlet) and public access (query param)
+    const outletId = req.outlet?._id || req.query.outletId;
+    
+    if (!outletId) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: "MISSING_OUTLET_ID",
+          message: "Outlet ID is required",
+        },
+      });
+    }
 
     // Get outlet information
-    const outlet = req.outlet;
+    const outlet = req.outlet || await Outlet.findById(outletId).lean();
 
     // Get all active categories for this outlet
     const categories = await Category.find({
@@ -764,10 +776,21 @@ export const getMenuPrintData = async (req: Request, res: Response) => {
  */
 export const getFullMenuData = async (req: Request, res: Response) => {
   try {
-    const outletId = req.outlet._id;
+    // Support both authenticated (req.outlet) and public access (query param)
+    const outletId = req.outlet?._id || req.query.outletId;
+    
+    if (!outletId) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: "MISSING_OUTLET_ID",
+          message: "Outlet ID is required",
+        },
+      });
+    }
 
     // Get outlet information
-    const outlet = req.outlet;
+    const outlet = req.outlet || await Outlet.findById(outletId).lean();
 
     // Get all active categories for this outlet
     const categories = await Category.find({
