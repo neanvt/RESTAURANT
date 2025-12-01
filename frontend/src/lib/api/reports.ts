@@ -140,21 +140,31 @@ export const reportsApi = {
     return response.data.data;
   },
 
-  // Get menu print data (supports public access with outletId)
-  getMenuPrintData: async (outletId?: string): Promise<any> => {
-    const url = outletId
-      ? `/reports/menu-print?outletId=${outletId}`
-      : "/reports/menu-print";
-    const response = await publicApi.get(url);
+  // Get menu print data (authenticated - for dashboard use)
+  getMenuPrintData: async (): Promise<any> => {
+    const response = await api.get("/reports/menu-print");
     return response.data.data;
   },
 
-  // Get full menu data (including unavailable items, supports public access with outletId)
-  getFullMenuData: async (outletId?: string): Promise<any> => {
-    const url = outletId
-      ? `/reports/menu-full?outletId=${outletId}`
-      : "/reports/menu-full";
-    const response = await publicApi.get(url);
+  // Get full menu data (authenticated - for dashboard use)
+  getFullMenuData: async (): Promise<any> => {
+    const response = await api.get("/reports/menu-full");
+    return response.data.data;
+  },
+
+  // Get current menu data (public - for customer-facing pages)
+  getCurrentMenuData: async (outletId: string): Promise<any> => {
+    const response = await publicApi.get(
+      `/reports/menu-current?outletId=${outletId}`
+    );
+    return response.data.data;
+  },
+
+  // Get public full menu data (public - for customer-facing pages)
+  getPublicMenuData: async (outletId: string): Promise<any> => {
+    const response = await publicApi.get(
+      `/reports/menu-public?outletId=${outletId}`
+    );
     return response.data.data;
   },
 };

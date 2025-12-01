@@ -15,9 +15,9 @@ import { attachCurrentOutlet } from "../middleware/outletMiddleware";
 
 const router = express.Router();
 
-// Public menu routes (no authentication required)
-router.get("/menu-print", getMenuPrintData);
-router.get("/menu-full", getFullMenuData);
+// Public menu routes (no authentication required, expects outletId in query)
+router.get("/menu-current", getMenuPrintData);
+router.get("/menu-public", getFullMenuData);
 
 // All other routes require authentication and current outlet
 router.use(authenticate);
@@ -31,5 +31,9 @@ router.get("/categories", getCategorySalesReport);
 router.get("/payment-methods", getPaymentMethodReport);
 router.get("/top-items", getTopSellingItems);
 router.get("/customers", getCustomerAnalytics);
+
+// Authenticated menu routes (gets outlet from middleware)
+router.get("/menu-print", getMenuPrintData);
+router.get("/menu-full", getFullMenuData);
 
 export default router;

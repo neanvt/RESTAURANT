@@ -54,8 +54,13 @@ export default function MenuCurrentPage() {
     try {
       setLoading(true);
       // Get outletId from localStorage (set by menu-select page)
-      const outletId = localStorage.getItem("publicOutletId") || undefined;
-      const data = await reportsApi.getMenuPrintData(outletId);
+      const outletId = localStorage.getItem("publicOutletId");
+      if (!outletId) {
+        toast.error("Outlet not found");
+        router.push("/");
+        return;
+      }
+      const data = await reportsApi.getCurrentMenuData(outletId);
       setMenuData(data);
     } catch (error: any) {
       console.error("Failed to fetch menu data:", error);
