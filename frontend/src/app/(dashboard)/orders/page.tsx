@@ -59,7 +59,8 @@ export default function OrdersPage() {
     setSearchQuery(value);
     setFilters({
       ...filters,
-      search: value || undefined,
+      // Only filter when search has 3+ characters
+      search: value.length >= 3 ? value : undefined,
       startDate: dateRange.startDate || undefined,
       endDate: dateRange.endDate || undefined,
     });

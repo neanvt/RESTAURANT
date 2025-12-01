@@ -7,6 +7,8 @@ import {
   getPaymentMethodReport,
   getTopSellingItems,
   getCustomerAnalytics,
+  getMenuPrintData,
+  getFullMenuData,
 } from "../controllers/reportController";
 import { authenticate } from "../middleware/authMiddleware";
 import { attachCurrentOutlet } from "../middleware/outletMiddleware";
@@ -25,5 +27,7 @@ router.get("/categories", getCategorySalesReport);
 router.get("/payment-methods", getPaymentMethodReport);
 router.get("/top-items", getTopSellingItems);
 router.get("/customers", getCustomerAnalytics);
+router.get("/menu-print", getMenuPrintData);
+router.get("/menu-full", getFullMenuData);
 
 export default router;

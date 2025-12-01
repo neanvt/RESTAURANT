@@ -112,7 +112,8 @@ class ItemService {
       }
 
       if (filters.search) {
-        query.$text = { $search: filters.search };
+        // Use regex for partial matching instead of full-text search
+        query.name = { $regex: filters.search, $options: "i" };
       }
 
       const items = await Item.find(query)
@@ -539,7 +540,8 @@ class ItemService {
       }
 
       if (filters.search) {
-        query.$text = { $search: filters.search };
+        // Use regex for partial matching instead of full-text search
+        query.name = { $regex: filters.search, $options: "i" };
       }
 
       // Calculate date ranges for popularity

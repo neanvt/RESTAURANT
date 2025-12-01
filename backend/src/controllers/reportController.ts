@@ -2,6 +2,8 @@ import { Request, Response } from "express";
 import Order from "../models/Order";
 import Invoice from "../models/Invoice";
 import Customer from "../models/Customer";
+import Item from "../models/Item";
+import Category from "../models/Category";
 import mongoose from "mongoose";
 
 /**
@@ -666,6 +668,178 @@ export const getCustomerAnalytics = async (req: Request, res: Response) => {
       error: {
         code: "INTERNAL_ERROR",
         message: error.message || "Failed to fetch customer analytics",
+      },
+    });
+  }
+};
+
+/**
+ * Get menu print data with outlet info and available items
+ */
+export const getMenuPrintData = async (req: Request, res: Response) => {
+  try {
+    const outletId = req.outlet._id;
+
+    // Get outlet information
+    const outlet = req.outlet;
+
+    // Get all active categories for this outlet
+    const categories = await Category.find({
+      outletId,
+      isActive: true,
+    })
+      .sort({ displayOrder: 1 })
+      .lean();
+
+    // Get all available and active items with their categories
+    const items = await Item.find({
+      outletId,
+      isActive: true,
+      isAvailable: true,
+    })
+      .populate("category")
+      .sort({ name: 1 })
+      .lean();
+
+    // Group items by category
+    const itemsByCategory = categories
+      .map((category: any) => {
+        const categoryIdStr = category._id.toString();
+        const categoryItems = items.filter((item: any) => {
+          const itemCategoryId = item.category?._id || item.category;
+          return itemCategoryId?.toString() === categoryIdStr;
+        });
+
+        return {
+          categoryId: category._id,
+          categoryName: category.name,
+          categoryIcon: category.icon,
+          items: categoryItems.map((item: any) => ({
+            id: item._id,
+            name: item.name,
+            description: item.description,
+            price: item.price,
+            image: item.image?.url,
+          })),
+        };
+      })
+      .filter((cat) => cat.items.length > 0); // Only include categories with items
+
+    res.json({
+      success: true,
+      data: {
+        outlet: {
+          name: outlet.businessName,
+          logo: outlet.logo,
+          address: {
+            street: outlet.address.street,
+            city: outlet.address.city,
+            state: outlet.address.state,
+            pincode: outlet.address.pincode,
+          },
+          contact: {
+            phone: outlet.contact.phone,
+            whatsapp: outlet.contact.whatsapp,
+          },
+          operatingHours: outlet.operatingHours,
+        },
+        categories: itemsByCategory,
+        totalItems: items.length,
+      },
+    });
+  } catch (error: any) {
+    console.error("Get menu print data error:", error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: "INTERNAL_ERROR",
+        message: error.message || "Failed to fetch menu print data",
+      },
+    });
+  }
+};
+
+/**
+ * Get full menu data with outlet info and ALL items (including unavailable)
+ */
+export const getFullMenuData = async (req: Request, res: Response) => {
+  try {
+    const outletId = req.outlet._id;
+
+    // Get outlet information
+    const outlet = req.outlet;
+
+    // Get all active categories for this outlet
+    const categories = await Category.find({
+      outletId,
+      isActive: true,
+    })
+      .sort({ displayOrder: 1 })
+      .lean();
+
+    // Get ALL active items (including unavailable ones)
+    const items = await Item.find({
+      outletId,
+      isActive: true,
+    })
+      .populate("category")
+      .sort({ name: 1 })
+      .lean();
+
+    // Group items by category
+    const itemsByCategory = categories
+      .map((category: any) => {
+        const categoryIdStr = category._id.toString();
+        const categoryItems = items.filter((item: any) => {
+          const itemCategoryId = item.category?._id || item.category;
+          return itemCategoryId?.toString() === categoryIdStr;
+        });
+
+        return {
+          categoryId: category._id,
+          categoryName: category.name,
+          categoryIcon: category.icon,
+          items: categoryItems.map((item: any) => ({
+            id: item._id,
+            name: item.name,
+            description: item.description,
+            price: item.price,
+            image: item.image?.url,
+            isAvailable: item.isAvailable,
+          })),
+        };
+      })
+      .filter((cat) => cat.items.length > 0); // Only include categories with items
+
+    res.json({
+      success: true,
+      data: {
+        outlet: {
+          name: outlet.businessName,
+          logo: outlet.logo,
+          address: {
+            street: outlet.address.street,
+            city: outlet.address.city,
+            state: outlet.address.state,
+            pincode: outlet.address.pincode,
+          },
+          contact: {
+            phone: outlet.contact.phone,
+            whatsapp: outlet.contact.whatsapp,
+          },
+          operatingHours: outlet.operatingHours,
+        },
+        categories: itemsByCategory,
+        totalItems: items.length,
+      },
+    });
+  } catch (error: any) {
+    console.error("Get full menu data error:", error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: "INTERNAL_ERROR",
+        message: error.message || "Failed to fetch full menu data",
       },
     });
   }

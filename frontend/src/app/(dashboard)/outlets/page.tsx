@@ -146,13 +146,13 @@ export default function OutletsPage() {
                   <div className="flex items-start gap-3">
                     {/* Logo */}
                     {outlet.logo && getFullImageUrl(outlet.logo) ? (
-                      <div className="relative w-16 h-16 rounded-lg overflow-hidden border-2 border-gray-200 flex-shrink-0">
+                      <div className="relative w-16 h-16 rounded-lg overflow-hidden border-2 border-gray-200 flex-shrink-0 bg-white">
                         <Image
                           src={getFullImageUrl(outlet.logo)!}
                           alt={outlet.businessName}
                           fill
                           sizes="64px"
-                          className="object-cover"
+                          className="object-contain p-1"
                         />
                       </div>
                     ) : (

@@ -26,8 +26,6 @@ export default function BusinessSettingsPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string>("");
-  const [logoMode, setLogoMode] = useState<"fit" | "fill">("fit");
-  const imgRef = useRef<HTMLImageElement | null>(null);
 
   const [formData, setFormData] = useState({
     businessName: "",
@@ -38,6 +36,7 @@ export default function BusinessSettingsPage() {
     country: "India",
     phone: "",
     email: "",
+    whatsapp: "",
     gstin: "",
     isGstEnabled: false,
     upiId: "",
@@ -47,21 +46,6 @@ export default function BusinessSettingsPage() {
     const loadData = async () => {
       try {
         await fetchCurrentOutlet();
-        if (currentOutlet) {
-          setFormData({
-            businessName: currentOutlet.businessName,
-            street: currentOutlet.address.street,
-            city: currentOutlet.address.city,
-            state: currentOutlet.address.state,
-            pincode: currentOutlet.address.pincode,
-            country: currentOutlet.address.country,
-            phone: currentOutlet.contact.phone,
-            email: currentOutlet.contact.email || "",
-            gstin: currentOutlet.gstDetails.gstin || "",
-            isGstEnabled: currentOutlet.gstDetails.isGstEnabled,
-            upiId: currentOutlet.upiDetails.upiId || "",
-          });
-        }
       } catch (error) {
         toast.error("Failed to load business details");
       } finally {
@@ -70,7 +54,27 @@ export default function BusinessSettingsPage() {
     };
 
     loadData();
-  }, [fetchCurrentOutlet, currentOutlet]);
+  }, [fetchCurrentOutlet]);
+
+  // Update form when currentOutlet changes
+  useEffect(() => {
+    if (currentOutlet) {
+      setFormData({
+        businessName: currentOutlet.businessName,
+        street: currentOutlet.address.street,
+        city: currentOutlet.address.city,
+        state: currentOutlet.address.state,
+        pincode: currentOutlet.address.pincode,
+        country: currentOutlet.address.country,
+        phone: currentOutlet.contact.phone,
+        email: currentOutlet.contact.email || "",
+        whatsapp: currentOutlet.contact.whatsapp || "",
+        gstin: currentOutlet.gstDetails.gstin || "",
+        isGstEnabled: currentOutlet.gstDetails.isGstEnabled,
+        upiId: currentOutlet.upiDetails.upiId || "",
+      });
+    }
+  }, [currentOutlet]);
 
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -183,6 +187,7 @@ export default function BusinessSettingsPage() {
         contact: {
           phone: formData.phone,
           email: formData.email || undefined,
+          whatsapp: formData.whatsapp || undefined,
         },
         gstDetails: {
           gstin: formData.gstin || undefined,
@@ -279,49 +284,10 @@ export default function BusinessSettingsPage() {
                   style={{ aspectRatio: "2 / 1" }}
                 >
                   <img
-                    ref={imgRef}
                     src={displayLogo}
                     alt="Logo preview"
-                    className={
-                      logoMode === "fit"
-                        ? "max-w-full max-h-full object-contain"
-                        : "w-full h-full object-cover"
-                    }
+                    className="max-w-full max-h-full object-contain p-2"
                   />
-                  <div className="absolute left-2 top-2 flex items-center gap-2">
-                    <Button
-                      size="sm"
-                      variant={logoMode === "fit" ? undefined : "outline"}
-                      onClick={() => setLogoMode("fit")}
-                    >
-                      Fit
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant={logoMode === "fill" ? undefined : "outline"}
-                      onClick={() => setLogoMode("fill")}
-                    >
-                      Fill
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={async () => {
-                        try {
-                          const src = logoPreview || displayLogo;
-                          const cropped = await cropImageToSize(src, 512, 256);
-                          setLogoPreview(cropped.preview);
-                          setLogoFile(cropped.file);
-                          setLogoMode("fit");
-                          toast.success("Logo cropped to recommended size");
-                        } catch (e) {
-                          toast.error("Failed to crop image");
-                        }
-                      }}
-                    >
-                      Crop
-                    </Button>
-                  </div>
                   <button
                     type="button"
                     onClick={() => {
@@ -446,6 +412,21 @@ export default function BusinessSettingsPage() {
                 placeholder="+91 9876543210"
                 required
               />
+            </div>
+            <div>
+              <Label htmlFor="whatsapp">WhatsApp Number (Optional)</Label>
+              <Input
+                id="whatsapp"
+                type="tel"
+                value={formData.whatsapp}
+                onChange={(e) =>
+                  setFormData({ ...formData, whatsapp: e.target.value })
+                }
+                placeholder="+91 9876543210"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Used for WhatsApp QR code on menu
+              </p>
             </div>
             <div>
               <Label htmlFor="email">Email (Optional)</Label>

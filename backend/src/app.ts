@@ -21,6 +21,7 @@ import printerRoutes from "./routes/printerRoutes";
 import menuScanRoutes from "./routes/menuScanRoutes";
 import subscriptionRoutes from "./routes/subscriptionRoutes";
 import notificationRoutes from "./routes/notificationRoutes";
+import feedbackRoutes from "./routes/feedbackRoutes";
 
 const app: Application = express();
 
@@ -149,6 +150,7 @@ app.use("/api/menu-scan", menuScanRoutes);
 app.use("/api/subscriptions", subscriptionRoutes);
 // AI feature removed per request: ai routes are no longer registered
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/feedback", feedbackRoutes);
 
 // 404 handler
 app.use((_req: Request, res: Response) => {

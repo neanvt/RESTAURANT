@@ -28,19 +28,52 @@ export default function ItemsPage() {
     setFilters,
   } = useItemStore();
   const [searchQuery, setSearchQuery] = useState("");
+  const [showUnavailable, setShowUnavailable] = useState(false);
+  const [showFavourite, setShowFavourite] = useState(false);
 
   useEffect(() => {
     fetchCategories();
     fetchItems();
   }, [fetchCategories, fetchItems]);
 
+  // Filter items based on favourite and unavailable toggles
+  let filteredItems = items;
+  if (showUnavailable) {
+    filteredItems = items.filter((item) => !item.isAvailable);
+  } else if (showFavourite) {
+    filteredItems = items.filter((item) => item.isFavourite);
+  }
+
+  // Sort items: available first, then unavailable at the end
+  const sortedItems = [...filteredItems].sort((a, b) => {
+    // Available items come first
+    if (a.isAvailable && !b.isAvailable) return -1;
+    if (!a.isAvailable && b.isAvailable) return 1;
+    return 0;
+  });
+
   const handleSearch = (value: string) => {
     setSearchQuery(value);
-    setFilters({ ...filters, search: value || undefined });
+    // Only filter when search has 3+ characters
+    setFilters({ ...filters, search: value.length >= 3 ? value : undefined });
   };
 
   const handleCategorySelect = (categoryId: string | null) => {
     setFilters({ ...filters, category: categoryId || undefined });
+    setShowUnavailable(false);
+    setShowFavourite(false);
+  };
+
+  const handleFavouriteToggle = () => {
+    setShowFavourite(!showFavourite);
+    setShowUnavailable(false);
+    setFilters({ ...filters, category: undefined });
+  };
+
+  const handleUnavailableToggle = () => {
+    setShowUnavailable(!showUnavailable);
+    setShowFavourite(false);
+    setFilters({ ...filters, category: undefined });
   };
 
   const handleDelete = async (id: string) => {
@@ -104,6 +137,10 @@ export default function ItemsPage() {
           <CategoryFilter
             selectedCategory={filters.category || null}
             onCategorySelect={handleCategorySelect}
+            onFavouriteSelect={handleFavouriteToggle}
+            showFavourite={showFavourite}
+            onUnavailableSelect={handleUnavailableToggle}
+            showUnavailable={showUnavailable}
           />
         </div>
       </div>
@@ -119,7 +156,7 @@ export default function ItemsPage() {
               />
             ))}
           </div>
-        ) : items.length === 0 ? (
+        ) : sortedItems.length === 0 ? (
           <div className="flex min-h-[400px] flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 p-8 text-center">
             <div className="text-6xl mb-4">🍽️</div>
             <h3 className="text-lg font-semibold text-gray-900">
@@ -131,7 +168,7 @@ export default function ItemsPage() {
           </div>
         ) : (
           <div className="space-y-3">
-            {items.map((item) => {
+            {sortedItems.map((item) => {
               return (
                 <div
                   key={item.id}

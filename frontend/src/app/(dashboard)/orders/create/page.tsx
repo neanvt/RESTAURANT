@@ -785,7 +785,8 @@ function CreateOrderPageComponent() {
   const filteredItems = items.filter((item) => {
     if (!item.isAvailable) return false;
     if (showFavourite && !item.isFavourite) return false;
-    if (!searchQuery) return true;
+    // Only search when query has 3+ characters
+    if (!searchQuery || searchQuery.length < 3) return true;
     return item.name.toLowerCase().includes(searchQuery.toLowerCase());
   });
 

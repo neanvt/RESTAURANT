@@ -26,8 +26,6 @@ export default function CreateOutletPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string>("");
-  const [logoMode, setLogoMode] = useState<"fit" | "fill">("fit");
-  const imgRef = useRef<HTMLImageElement | null>(null);
 
   useEffect(() => {
     // revoke object URLs when component unmounts
@@ -216,56 +214,10 @@ export default function CreateOutletPage() {
                   style={{ aspectRatio: "2 / 1" }}
                 >
                   <img
-                    ref={imgRef}
                     src={logoPreview}
                     alt="Logo preview"
-                    className={
-                      logoMode === "fit"
-                        ? "max-w-full max-h-full object-contain"
-                        : "w-full h-full object-cover"
-                    }
-                    style={
-                      logoMode === "fit" ? { display: "block" } : undefined
-                    }
+                    className="max-w-full max-h-full object-contain p-2"
                   />
-                  <div className="absolute left-2 top-2 flex items-center gap-2">
-                    <Button
-                      size="sm"
-                      variant={logoMode === "fit" ? undefined : "outline"}
-                      onClick={() => setLogoMode("fit")}
-                    >
-                      Fit
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant={logoMode === "fill" ? undefined : "outline"}
-                      onClick={() => setLogoMode("fill")}
-                    >
-                      Fill
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={async () => {
-                        // auto-center crop to 512x256
-                        try {
-                          const cropped = await cropImageToSize(
-                            logoPreview,
-                            512,
-                            256
-                          );
-                          setLogoPreview(cropped.preview);
-                          setLogoFile(cropped.file);
-                          setLogoMode("fit");
-                          toast.success("Logo cropped to recommended size");
-                        } catch (e) {
-                          toast.error("Failed to crop image");
-                        }
-                      }}
-                    >
-                      Crop
-                    </Button>
-                  </div>
                   <button
                     type="button"
                     onClick={() => {

@@ -90,13 +90,13 @@ export default function DashboardPage() {
 
           {/* Logo */}
           {currentOutlet?.logo && getFullImageUrl(currentOutlet.logo) ? (
-            <div className="relative w-10 h-10 rounded-full overflow-hidden border-2 border-gray-200">
+            <div className="relative w-10 h-10 rounded-full overflow-hidden border-2 border-gray-200 bg-white">
               <Image
                 src={getFullImageUrl(currentOutlet.logo)!}
                 alt={currentOutlet.businessName}
                 fill
                 sizes="40px"
-                className="object-cover"
+                className="object-contain p-1"
               />
             </div>
           ) : (

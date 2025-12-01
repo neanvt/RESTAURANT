@@ -16,6 +16,7 @@ import {
   Wallet,
   Box,
   Printer,
+  Menu,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { useAuth } from "@/hooks/useAuth";
@@ -31,6 +32,13 @@ export default function MorePage() {
       description: "Manage your outlets",
       path: "/outlets",
       color: "bg-blue-100 text-blue-600",
+    },
+    {
+      icon: Menu,
+      label: "Print Menu",
+      description: "Print available menu items",
+      path: "/menu-print",
+      color: "bg-green-100 text-green-600",
     },
     {
       icon: Users,

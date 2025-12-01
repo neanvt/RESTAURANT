@@ -11,6 +11,8 @@ interface CategoryFilterProps {
   onCategorySelect: (categoryId: string | null) => void;
   onFavouriteSelect?: () => void;
   showFavourite?: boolean;
+  onUnavailableSelect?: () => void;
+  showUnavailable?: boolean;
 }
 
 export function CategoryFilter({
@@ -18,6 +20,8 @@ export function CategoryFilter({
   onCategorySelect,
   onFavouriteSelect,
   showFavourite = false,
+  onUnavailableSelect,
+  showUnavailable = false,
 }: CategoryFilterProps) {
   const { categories, fetchCategories, isLoading } = useCategoryStore();
 
@@ -48,7 +52,9 @@ export function CategoryFilter({
     >
       <Button
         variant={
-          selectedCategory === null && !showFavourite ? "default" : "outline"
+          selectedCategory === null && !showFavourite && !showUnavailable
+            ? "default"
+            : "outline"
         }
         size="sm"
         onClick={() => onCategorySelect(null)}
@@ -56,6 +62,7 @@ export function CategoryFilter({
           "flex-shrink-0 rounded-lg px-4",
           selectedCategory === null &&
             !showFavourite &&
+            !showUnavailable &&
             "bg-blue-600 text-white hover:bg-blue-700"
         )}
       >
@@ -90,6 +97,20 @@ export function CategoryFilter({
           {category.name}
         </Button>
       ))}
+
+      {onUnavailableSelect && (
+        <Button
+          variant={showUnavailable ? "default" : "outline"}
+          size="sm"
+          onClick={onUnavailableSelect}
+          className={cn(
+            "flex-shrink-0 rounded-lg px-4",
+            showUnavailable && "bg-red-600 text-white hover:bg-red-700"
+          )}
+        >
+          Unavailable
+        </Button>
+      )}
     </div>
   );
 }

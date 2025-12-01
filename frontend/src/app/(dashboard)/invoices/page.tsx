@@ -79,7 +79,8 @@ export default function InvoicesPage() {
 
   const handleSearch = (value: string) => {
     setSearchQuery(value);
-    setFilters({ ...filters, search: value || undefined });
+    // Only filter when search has 3+ characters
+    setFilters({ ...filters, search: value.length >= 3 ? value : undefined });
   };
 
   const handlePaymentStatusFilter = (status: string) => {

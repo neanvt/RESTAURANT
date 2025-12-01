@@ -201,7 +201,12 @@ export default function ExpensesPage() {
             type="text"
             placeholder="Search expenses..."
             value={filters.search || ""}
-            onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+            onChange={(e) =>
+              setFilters({
+                ...filters,
+                search: e.target.value.length >= 3 ? e.target.value : undefined,
+              })
+            }
             className="w-full px-3 py-2 text-sm border rounded-lg"
           />
         </div>

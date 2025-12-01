@@ -46,13 +46,10 @@ export const useItemStore = create<ItemState>((set, get) => ({
     }
     try {
       const currentFilters = filters || get().filters;
-      // Ensure we have required fields for the backend
+      // Use filters as-is, don't default isAvailable to true
+      // This allows showing both available and unavailable items on the items page
       const enhancedFilters = {
         ...currentFilters,
-        isAvailable:
-          currentFilters.isAvailable !== undefined
-            ? currentFilters.isAvailable
-            : true,
       };
 
       const rawItems = await itemsApi.getAll(enhancedFilters);
@@ -95,12 +92,9 @@ export const useItemStore = create<ItemState>((set, get) => ({
     try {
       const currentFilters = filters || get().filters;
       // Ensure we have required fields for the backend
+      // Use filters as-is, don't default isAvailable to true
       const enhancedFilters = {
         ...currentFilters,
-        isAvailable:
-          currentFilters.isAvailable !== undefined
-            ? currentFilters.isAvailable
-            : true,
       };
 
       const rawItems = await itemsApi.getAllWithPopularity(enhancedFilters);
@@ -126,12 +120,9 @@ export const useItemStore = create<ItemState>((set, get) => ({
       // Fallback to regular fetch if popularity sorting fails
       try {
         const currentFilters = filters || get().filters;
+        // Use filters as-is, don't default isAvailable to true
         const enhancedFilters = {
           ...currentFilters,
-          isAvailable:
-            currentFilters.isAvailable !== undefined
-              ? currentFilters.isAvailable
-              : true,
         };
         const rawItems = await itemsApi.getAll(enhancedFilters);
 

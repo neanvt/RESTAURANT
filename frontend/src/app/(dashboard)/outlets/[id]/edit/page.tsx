@@ -36,8 +36,6 @@ export default function EditOutletPage() {
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string>("");
   const [currentLogo, setCurrentLogo] = useState<string>("");
-  const [logoMode, setLogoMode] = useState<"fit" | "fill">("fit");
-  const imgRef = useRef<HTMLImageElement | null>(null);
 
   const [formData, setFormData] = useState({
     businessName: "",
@@ -48,6 +46,7 @@ export default function EditOutletPage() {
     country: "India",
     phone: "",
     email: "",
+    whatsapp: "",
     gstin: "",
     isGstEnabled: false,
     upiId: "",
@@ -66,6 +65,7 @@ export default function EditOutletPage() {
           country: outlet.address.country,
           phone: outlet.contact.phone,
           email: outlet.contact.email || "",
+          whatsapp: outlet.contact.whatsapp || "",
           gstin: outlet.gstDetails.gstin || "",
           isGstEnabled: outlet.gstDetails.isGstEnabled,
           upiId: outlet.upiDetails.upiId || "",
@@ -100,59 +100,6 @@ export default function EditOutletPage() {
       };
       reader.readAsDataURL(file);
     }
-  };
-
-  const cropImageToSize = async (
-    src: string,
-    targetW: number,
-    targetH: number
-  ) => {
-    return new Promise<{ preview: string; file: File }>((resolve, reject) => {
-      const img = new Image();
-      img.crossOrigin = "anonymous";
-      img.onload = () => {
-        try {
-          const sw = img.naturalWidth;
-          const sh = img.naturalHeight;
-          const srcAspect = sw / sh;
-          const targetAspect = targetW / targetH;
-
-          let sx = 0;
-          let sy = 0;
-          let sWidth = sw;
-          let sHeight = sh;
-
-          if (srcAspect > targetAspect) {
-            sWidth = Math.round(sh * targetAspect);
-            sx = Math.round((sw - sWidth) / 2);
-          } else {
-            sHeight = Math.round(sw / targetAspect);
-            sy = Math.round((sh - sHeight) / 2);
-          }
-
-          const canvas = document.createElement("canvas");
-          canvas.width = targetW;
-          canvas.height = targetH;
-          const ctx = canvas.getContext("2d");
-          if (!ctx) throw new Error("Canvas not supported");
-
-          ctx.drawImage(img, sx, sy, sWidth, sHeight, 0, 0, targetW, targetH);
-
-          canvas.toBlob((blob) => {
-            if (!blob) return reject(new Error("Failed to create blob"));
-            const preview = URL.createObjectURL(blob);
-            const file = new File([blob], "cropped-logo.png", {
-              type: "image/png",
-            });
-            resolve({ preview, file });
-          }, "image/png");
-        } catch (e) {
-          reject(e);
-        }
-      };
-      img.onerror = (e) => reject(e);
-      img.src = src;
-    });
   };
 
   const handleDeleteLogo = async () => {
@@ -197,6 +144,7 @@ export default function EditOutletPage() {
         contact: {
           phone: formData.phone,
           email: formData.email || undefined,
+          whatsapp: formData.whatsapp || undefined,
         },
         gstDetails: {
           gstin: formData.gstin || undefined,
@@ -299,50 +247,10 @@ export default function EditOutletPage() {
                   style={{ aspectRatio: "2 / 1" }}
                 >
                   <img
-                    ref={imgRef}
                     src={logoPreview || getFullImageUrl(currentLogo) || ""}
                     alt="Logo preview"
-                    className={
-                      logoMode === "fit"
-                        ? "max-w-full max-h-full object-contain"
-                        : "w-full h-full object-cover"
-                    }
+                    className="max-w-full max-h-full object-contain p-2"
                   />
-                  <div className="absolute left-2 top-2 flex items-center gap-2">
-                    <Button
-                      size="sm"
-                      variant={logoMode === "fit" ? undefined : "outline"}
-                      onClick={() => setLogoMode("fit")}
-                    >
-                      Fit
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant={logoMode === "fill" ? undefined : "outline"}
-                      onClick={() => setLogoMode("fill")}
-                    >
-                      Fill
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={async () => {
-                        try {
-                          const src =
-                            logoPreview || getFullImageUrl(currentLogo) || "";
-                          const cropped = await cropImageToSize(src, 512, 256);
-                          setLogoPreview(cropped.preview);
-                          setLogoFile(cropped.file);
-                          setLogoMode("fit");
-                          toast.success("Logo cropped to recommended size");
-                        } catch (e) {
-                          toast.error("Failed to crop image");
-                        }
-                      }}
-                    >
-                      Crop
-                    </Button>
-                  </div>
                   <button
                     type="button"
                     onClick={() => {
@@ -507,6 +415,21 @@ export default function EditOutletPage() {
                 placeholder="+91 9876543210"
                 required
               />
+            </div>
+            <div>
+              <Label htmlFor="whatsapp">WhatsApp Number (Optional)</Label>
+              <Input
+                id="whatsapp"
+                type="tel"
+                value={formData.whatsapp}
+                onChange={(e) =>
+                  setFormData({ ...formData, whatsapp: e.target.value })
+                }
+                placeholder="+91 9876543210"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Used for WhatsApp QR code on menu
+              </p>
             </div>
             <div>
               <Label htmlFor="email">Email (Optional)</Label>

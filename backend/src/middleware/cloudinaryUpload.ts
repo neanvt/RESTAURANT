@@ -100,13 +100,13 @@ export async function uploadAndOptimizeToCloudinary(
     let optimizedBuffer: Buffer;
 
     if (type === "outlet") {
-      // Outlet logos: 512x256
+      // Outlet logos: 512x256 with white background to preserve full logo
       optimizedBuffer = await sharp(buffer)
         .resize(512, 256, {
-          fit: "cover",
-          position: "center",
+          fit: "contain",
+          background: { r: 255, g: 255, b: 255, alpha: 1 },
         })
-        .jpeg({ quality: 85 })
+        .jpeg({ quality: 90 })
         .toBuffer();
     } else {
       // Item images: 800x800

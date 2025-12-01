@@ -1,0 +1,194 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { Loader2, ArrowLeft } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { reportsApi } from "@/lib/api/reports";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+import Image from "next/image";
+
+interface MenuItem {
+  id: string;
+  name: string;
+  description?: string;
+  price: number;
+  image?: string;
+}
+
+interface MenuCategory {
+  categoryId: string;
+  categoryName: string;
+  categoryIcon: string;
+  items: MenuItem[];
+}
+
+interface MenuData {
+  outlet: {
+    name: string;
+    logo?: string;
+    address: {
+      street: string;
+      city: string;
+      state: string;
+      pincode: string;
+    };
+    contact: {
+      phone: string;
+    };
+  };
+  categories: MenuCategory[];
+  totalItems: number;
+}
+
+export default function MenuCurrentPage() {
+  const router = useRouter();
+  const [loading, setLoading] = useState(true);
+  const [menuData, setMenuData] = useState<MenuData | null>(null);
+
+  useEffect(() => {
+    fetchMenuData();
+  }, []);
+
+  const fetchMenuData = async () => {
+    try {
+      setLoading(true);
+      const data = await reportsApi.getMenuPrintData();
+      setMenuData(data);
+    } catch (error: any) {
+      console.error("Failed to fetch menu data:", error);
+      toast.error("Failed to load menu data");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2 text-orange-500" />
+          <p className="text-gray-600">Loading current menu...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!menuData) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <p className="text-gray-600">No menu data available</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-orange-100">
+      {/* Header */}
+      <div className="bg-white shadow-md sticky top-0 z-10">
+        <div className="max-w-4xl mx-auto px-4 py-4">
+          <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => router.back()}
+              className="shrink-0"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <div className="flex-1">
+              <h1 className="text-2xl font-bold text-gray-900">Current Menu</h1>
+              <p className="text-sm text-gray-600">
+                {menuData.totalItems} items available today
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="max-w-4xl mx-auto px-4 py-8">
+        {/* Outlet Info */}
+        <div className="bg-white rounded-2xl shadow-lg p-8 mb-8 text-center">
+          {menuData.outlet.logo && (
+            <div className="flex justify-center">
+              <div className="relative w-48 h-20">
+                <Image
+                  src={menuData.outlet.logo}
+                  alt={menuData.outlet.name}
+                  fill
+                  className="object-contain"
+                />
+              </div>
+            </div>
+          )}
+          <h2 className="text-3xl font-bold text-gray-900 mb-2">
+            {menuData.outlet.name}
+          </h2>
+          <div className="text-sm text-gray-600 space-y-1">
+            <p>
+              {menuData.outlet.address.street}, {menuData.outlet.address.city}
+            </p>
+            <p>
+              {menuData.outlet.address.state} -{" "}
+              {menuData.outlet.address.pincode}
+            </p>
+            <p className="font-semibold text-orange-600 mt-2">
+              📞 {menuData.outlet.contact.phone}
+            </p>
+          </div>
+        </div>
+
+        {/* Menu Categories */}
+        {menuData.categories.map((category) => (
+          <div key={category.categoryId} className="mb-8">
+            <div className="bg-gradient-to-r from-orange-500 to-orange-600 text-white p-4 rounded-t-xl">
+              <h3 className="text-2xl font-bold flex items-center gap-2">
+                <span>{category.categoryIcon}</span>
+                <span>{category.categoryName}</span>
+              </h3>
+            </div>
+            <div className="bg-white rounded-b-xl shadow-lg overflow-hidden">
+              <div className="divide-y divide-gray-200">
+                {category.items.map((item) => (
+                  <div
+                    key={item.id}
+                    className="p-4 hover:bg-orange-50 transition-colors"
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-gray-900 text-lg mb-1">
+                          {item.name}
+                        </h4>
+                        {item.description && (
+                          <p className="text-sm text-gray-600">
+                            {item.description}
+                          </p>
+                        )}
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="text-xl font-bold text-orange-600">
+                          ₹{item.price}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        ))}
+
+        {/* Footer */}
+        <div className="bg-white rounded-xl shadow-lg p-6 text-center mt-8">
+          <p className="text-gray-600 mb-2">
+            For orders and inquiries, contact us:
+          </p>
+          <p className="text-xl font-bold text-orange-600">
+            📞 {menuData.outlet.contact.phone}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}

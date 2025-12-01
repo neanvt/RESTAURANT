@@ -169,10 +169,10 @@ export default function OutletSelectorModal({
                         {outlet.logo && getFullImageUrl(outlet.logo) ? (
                           <div className="relative w-12 h-12 rounded-lg overflow-hidden border border-gray-200 flex-shrink-0">
                             <Image
-                              src={getFullImageUrl(outlet.logo)!}
+                              src={outlet.logo}
                               alt={outlet.businessName}
                               fill
-                              className="object-cover"
+                              className="object-contain p-1"
                             />
                           </div>
                         ) : (

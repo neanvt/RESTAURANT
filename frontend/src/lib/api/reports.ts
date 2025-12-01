@@ -138,4 +138,16 @@ export const reportsApi = {
     const response = await api.get(`/reports/customers?${params.toString()}`);
     return response.data.data;
   },
+
+  // Get menu print data
+  getMenuPrintData: async (): Promise<any> => {
+    const response = await api.get("/reports/menu-print");
+    return response.data.data;
+  },
+
+  // Get full menu data (including unavailable items)
+  getFullMenuData: async (): Promise<any> => {
+    const response = await api.get("/reports/menu-full");
+    return response.data.data;
+  },
 };

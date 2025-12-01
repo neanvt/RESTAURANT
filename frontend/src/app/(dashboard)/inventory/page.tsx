@@ -138,7 +138,12 @@ export default function InventoryPage() {
               placeholder="Search items..."
               value={filters.search || ""}
               onChange={(e) =>
-                setFilters({ ...filters, search: e.target.value })
+                // Only filter when search has 3+ characters
+                setFilters({
+                  ...filters,
+                  search:
+                    e.target.value.length >= 3 ? e.target.value : undefined,
+                })
               }
               className="flex-1 px-3 py-1.5 text-sm border rounded-lg"
             />

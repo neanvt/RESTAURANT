@@ -109,6 +109,28 @@ export class OutletService {
       // Prevent updating ownerId
       const { ownerId, ...safeUpdateData } = updateData as any;
 
+      // Debug: Check if outlet exists
+      const existingOutlet = await Outlet.findById(outletId);
+      if (!existingOutlet) {
+        console.error(`[OutletService] Outlet ${outletId} not found`);
+        throw new Error("Outlet not found");
+      }
+
+      console.log(`[OutletService] Update attempt:`, {
+        outletId,
+        outletOwner: existingOutlet.ownerId.toString(),
+        requestingUser: userId.toString(),
+        match: existingOutlet.ownerId.toString() === userId.toString(),
+      });
+
+      // Debug: Check ownership
+      if (existingOutlet.ownerId.toString() !== userId.toString()) {
+        console.error(
+          `[OutletService] Unauthorized: Outlet owner=${existingOutlet.ownerId}, User=${userId}`
+        );
+        throw new Error("Unauthorized to update this outlet");
+      }
+
       const outlet = await Outlet.findOneAndUpdate(
         {
           _id: outletId,

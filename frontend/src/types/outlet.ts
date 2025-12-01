@@ -9,6 +9,7 @@ export interface Address {
 export interface Contact {
   phone: string;
   email?: string;
+  whatsapp?: string;
 }
 
 export interface GstDetails {
