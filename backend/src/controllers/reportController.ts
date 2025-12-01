@@ -677,7 +677,7 @@ export const getCustomerAnalytics = async (req: Request, res: Response) => {
 /**
  * Get menu print data with outlet info and available items
  */
-export const getMenuPrintData = async (req: Request, res: Response) => {
+export const getMenuPrintData = async (req: Request, res: Response): Promise<void> => {
   try {
     // Support both authenticated (req.outlet) and public access (query param)
     const outletId = req.outlet?._id || req.query.outletId;
@@ -774,7 +774,7 @@ export const getMenuPrintData = async (req: Request, res: Response) => {
 /**
  * Get full menu data with outlet info and ALL items (including unavailable)
  */
-export const getFullMenuData = async (req: Request, res: Response) => {
+export const getFullMenuData = async (req: Request, res: Response): Promise<void> => {
   try {
     // Support both authenticated (req.outlet) and public access (query param)
     const outletId = req.outlet?._id || req.query.outletId;
