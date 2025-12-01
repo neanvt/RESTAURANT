@@ -686,13 +686,14 @@ export const getMenuPrintData = async (
     const outletId = req.outlet?._id || req.query.outletId;
 
     if (!outletId) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         error: {
           code: "MISSING_OUTLET_ID",
           message: "Outlet ID is required",
         },
       });
+      return;
     }
 
     // Get outlet information
@@ -786,13 +787,14 @@ export const getFullMenuData = async (
     const outletId = req.outlet?._id || req.query.outletId;
 
     if (!outletId) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         error: {
           code: "MISSING_OUTLET_ID",
           message: "Outlet ID is required",
         },
       });
+      return;
     }
 
     // Get outlet information
