@@ -84,4 +84,10 @@ export const ordersApi = {
     const response = await api.put(`/orders/${id}/cancel`);
     return response.data.data;
   },
+
+  // Complete order
+  complete: async (id: string, paymentMethod?: string): Promise<Order> => {
+    const response = await api.put(`/orders/${id}/complete`, { paymentMethod });
+    return response.data.data;
+  },
 };

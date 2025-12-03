@@ -26,6 +26,7 @@ interface OrderState {
   holdOrder: (id: string) => Promise<Order>;
   resumeOrder: (id: string) => Promise<Order>;
   cancelOrder: (id: string) => Promise<Order>;
+  completeOrder: (id: string, paymentMethod?: string) => Promise<Order>;
   setFilters: (filters: OrderFilters) => void;
   setCurrentOrder: (order: Order | null) => void;
   clearError: () => void;
@@ -224,6 +225,26 @@ export const useOrderStore = create<OrderState>((set, get) => ({
     } catch (error: any) {
       set({
         error: error.response?.data?.error?.message || "Failed to cancel order",
+      });
+      throw error;
+    }
+  },
+
+  completeOrder: async (id, paymentMethod) => {
+    try {
+      const updatedOrder = await ordersApi.complete(id, paymentMethod);
+      set((state) => ({
+        orders: state.orders.map((order) =>
+          order.id === id ? updatedOrder : order
+        ),
+        currentOrder:
+          state.currentOrder?.id === id ? updatedOrder : state.currentOrder,
+      }));
+      return updatedOrder;
+    } catch (error: any) {
+      set({
+        error:
+          error.response?.data?.error?.message || "Failed to complete order",
       });
       throw error;
     }

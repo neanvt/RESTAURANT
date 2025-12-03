@@ -8,6 +8,7 @@ import {
   holdOrder,
   resumeOrder,
   cancelOrder,
+  completeOrder,
   deleteOrder,
 } from "../controllers/orderController";
 import { authenticate } from "../middleware/authMiddleware";
@@ -31,5 +32,6 @@ router.post("/:id/generate-kot", generateKOT);
 router.put("/:id/hold", holdOrder);
 router.put("/:id/resume", resumeOrder);
 router.put("/:id/cancel", cancelOrder);
+router.put("/:id/complete", completeOrder);
 
 export default router;

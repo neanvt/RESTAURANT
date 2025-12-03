@@ -48,8 +48,14 @@ function CreateOrderPageComponent() {
   const searchParams = useSearchParams();
   const { items, filters, fetchItemsWithPopularity, setFilters } =
     useItemStore();
-  const { createOrder, generateKOT, holdOrder, getOrderById, resumeOrder } =
-    useOrderStore();
+  const {
+    createOrder,
+    updateOrder,
+    generateKOT,
+    holdOrder,
+    getOrderById,
+    resumeOrder,
+  } = useOrderStore();
   const { cleanupOldKOTs } = useKOTStore();
   const { categories, fetchCategories } = useCategoryStore();
   const { currentOutlet, fetchCurrentOutlet } = useOutletStore();
@@ -101,16 +107,18 @@ function CreateOrderPageComponent() {
     loadData();
   }, []);
 
-  // Handle order resume logic
+  // Handle order resume/edit logic
   useEffect(() => {
     const resumeOrderId = searchParams.get("resumeOrderId");
+    const editOrderId = searchParams.get("editOrderId");
+    const orderIdToLoad = resumeOrderId || editOrderId;
 
-    if (resumeOrderId && items.length > 0 && !hasLoadedHeldOrder) {
+    if (orderIdToLoad && items.length > 0 && !hasLoadedHeldOrder) {
       const loadHeldOrder = async () => {
         try {
           setHasLoadedHeldOrder(true);
-          const heldOrder = await getOrderById(resumeOrderId);
-          console.log("Loading held order:", heldOrder);
+          const heldOrder = await getOrderById(orderIdToLoad);
+          console.log("Loading order for edit/resume:", heldOrder);
 
           // Populate form with held order data
           if (heldOrder.customer?.name) {
@@ -342,8 +350,9 @@ function CreateOrderPageComponent() {
     try {
       setIsProcessing(true);
 
-      // Check if we're resuming a held order
+      // Check if we're resuming or editing an order
       const resumeOrderId = searchParams.get("resumeOrderId");
+      const editOrderId = searchParams.get("editOrderId");
       let orderId: string;
       let order: any;
 
@@ -352,6 +361,29 @@ function CreateOrderPageComponent() {
         order = await resumeOrder(resumeOrderId);
         orderId = order.id || order._id;
         console.log("Order resumed:", order);
+      } else if (editOrderId) {
+        // Update existing order
+        const orderData = {
+          items: cart.map((item) => ({
+            item: item.id,
+            quantity: item.cartQuantity,
+            notes: item.notes,
+          })),
+          customer:
+            customerName || customerPhone
+              ? {
+                  name: customerName || undefined,
+                  phone: customerPhone || undefined,
+                }
+              : undefined,
+          tableNumber: tableNumber || undefined,
+          notes: orderNotes || undefined,
+        };
+
+        order = await updateOrder(editOrderId, orderData);
+        orderId = order.id || order._id;
+        console.log("Order updated:", order);
+        toast.success("Order updated successfully");
       } else {
         // Create new order
         const orderData = {

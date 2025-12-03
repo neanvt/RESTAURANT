@@ -411,9 +411,21 @@ export const getOrders = async (req: Request, res: Response): Promise<void> => {
     }
     const { status, paymentStatus, search, startDate, endDate } = req.query;
 
+    // Base filter
     const filter: any = { outletId };
 
-    if (status) filter.status = status;
+    // Handle status filter including 'inactive'
+    if (status === "inactive") {
+      // Show only inactive orders
+      filter.isActive = false;
+    } else if (status) {
+      // Show active orders with specific status
+      filter.status = status;
+      filter.$or = [{ isActive: true }, { isActive: { $exists: false } }];
+    } else {
+      // Show all active orders (default)
+      filter.$or = [{ isActive: true }, { isActive: { $exists: false } }];
+    }
     if (paymentStatus) filter.paymentStatus = paymentStatus;
     if (search) {
       filter.$or = [
@@ -468,7 +480,11 @@ export const getOrder = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    const order = await Order.findOne({ _id: id, outletId })
+    const order = await Order.findOne({
+      _id: id,
+      outletId,
+      $or: [{ isActive: true }, { isActive: { $exists: false } }],
+    })
       .populate("createdBy", "name email")
       .populate("kotId");
 
@@ -510,23 +526,22 @@ export const updateOrder = async (
       return;
     }
 
-    const order = await Order.findOne({ _id: id, outletId });
+    const order = await Order.findOne({
+      _id: id,
+      outletId,
+      $or: [{ isActive: true }, { isActive: { $exists: false } }],
+    });
 
     if (!order) {
       res.status(404).json({
         success: false,
-        error: { message: "Order not found" },
+        error: { message: "Order not found or has been deleted" },
       });
       return;
     }
 
-    if (order.status !== "draft") {
-      res.status(400).json({
-        success: false,
-        error: { message: "Only draft orders can be updated" },
-      });
-      return;
-    }
+    // Allow updating all active orders (user can modify any order before marking inactive)
+    const hadKOT = order.status === "kot_generated";
 
     // Update items if provided
     if (items && items.length > 0) {
@@ -579,6 +594,50 @@ export const updateOrder = async (
 
     await order.save();
 
+    // If order had KOT, regenerate it with updated items
+    if (hadKOT && order.kotId) {
+      try {
+        const existingKOT = await KOT.findById(order.kotId);
+        if (existingKOT) {
+          // Update KOT with new items (preserving required fields)
+          existingKOT.items = order.items.map((item: any) => ({
+            item: item.item,
+            name: item.name,
+            quantity: item.quantity,
+            notes: item.notes,
+            status: "pending" as const, // Reset status to pending for updated items
+          }));
+          existingKOT.updatedAt = new Date();
+          await existingKOT.save();
+          console.log(`✅ KOT ${order.kotId} updated for order ${id}`);
+        }
+      } catch (kotError: any) {
+        console.error("Failed to update KOT:", kotError);
+        // Continue even if KOT update fails
+      }
+    }
+
+    // Update invoice if it exists
+    try {
+      // Dynamically import Invoice model to avoid circular dependency
+      const Invoice = (await import("../models/Invoice")).default;
+      const existingInvoice = await Invoice.findOne({ orderId: order._id });
+
+      if (existingInvoice) {
+        // Update invoice items and amounts
+        existingInvoice.items = order.items;
+        existingInvoice.subtotal = order.subtotal;
+        existingInvoice.taxAmount = order.taxAmount;
+        existingInvoice.total = order.total;
+        existingInvoice.updatedAt = new Date();
+        await existingInvoice.save();
+        console.log(`✅ Invoice updated for order ${id}`);
+      }
+    } catch (invoiceError: any) {
+      console.error("Failed to update invoice:", invoiceError);
+      // Continue even if invoice update fails
+    }
+
     res.json({
       success: true,
       data: order,
@@ -617,7 +676,11 @@ export const generateKOT = async (
       return;
     }
 
-    const order = await Order.findOne({ _id: id, outletId });
+    const order = await Order.findOne({
+      _id: id,
+      outletId,
+      $or: [{ isActive: true }, { isActive: { $exists: false } }],
+    });
 
     if (!order) {
       res.status(404).json({
@@ -627,12 +690,13 @@ export const generateKOT = async (
       return;
     }
 
-    if (order.status !== "draft" && order.status !== "kot_generated") {
+    // Allow KOT generation for draft, kot_generated, on_hold, and completed orders
+    // This allows regenerating KOT after editing an order
+    if (order.status === "cancelled") {
       res.status(400).json({
         success: false,
         error: {
-          message:
-            "KOT can only be generated for draft or kot_generated orders",
+          message: "Cannot generate KOT for cancelled orders",
         },
       });
       return;
@@ -761,7 +825,11 @@ export const holdOrder = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    const order = await Order.findOne({ _id: id, outletId });
+    const order = await Order.findOne({
+      _id: id,
+      outletId,
+      $or: [{ isActive: true }, { isActive: { $exists: false } }],
+    });
 
     if (!order) {
       res.status(404).json({
@@ -771,10 +839,11 @@ export const holdOrder = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    if (order.status !== "draft" && order.status !== "kot_generated") {
+    // Allow holding orders that are not completed or cancelled
+    if (order.status === "completed" || order.status === "cancelled") {
       res.status(400).json({
         success: false,
-        error: { message: "Only draft or KOT generated orders can be held" },
+        error: { message: "Cannot hold completed or cancelled orders" },
       });
       return;
     }
@@ -822,7 +891,11 @@ export const resumeOrder = async (
       return;
     }
 
-    const order = await Order.findOne({ _id: id, outletId });
+    const order = await Order.findOne({
+      _id: id,
+      outletId,
+      $or: [{ isActive: true }, { isActive: { $exists: false } }],
+    });
 
     if (!order) {
       res.status(404).json({
@@ -884,7 +957,11 @@ export const cancelOrder = async (
       return;
     }
 
-    const order = await Order.findOne({ _id: id, outletId });
+    const order = await Order.findOne({
+      _id: id,
+      outletId,
+      $or: [{ isActive: true }, { isActive: { $exists: false } }],
+    });
 
     if (!order) {
       res.status(404).json({
@@ -928,6 +1005,145 @@ export const cancelOrder = async (
   }
 };
 
+// Complete order and create invoice
+export const completeOrder = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { paymentMethod = "cash" } = req.body;
+    const outletId = req.outletId;
+
+    if (!outletId) {
+      res.status(400).json({
+        success: false,
+        error: { message: "No outlet selected" },
+      });
+      return;
+    }
+
+    const order = await Order.findOne({
+      _id: id,
+      outletId,
+      $or: [{ isActive: true }, { isActive: { $exists: false } }],
+    });
+
+    if (!order) {
+      res.status(404).json({
+        success: false,
+        error: { message: "Order not found" },
+      });
+      return;
+    }
+
+    if (order.status === "cancelled") {
+      res.status(400).json({
+        success: false,
+        error: { message: "Cancelled orders cannot be completed" },
+      });
+      return;
+    }
+
+    // Mark order as completed
+    order.status = "completed";
+    order.paymentStatus = "paid";
+    order.paymentMethod = paymentMethod;
+    order.completedAt = new Date();
+    await order.save();
+
+    // Create invoice if it doesn't exist
+    try {
+      const Invoice = (await import("../models/Invoice")).default;
+      let invoice = await Invoice.findOne({ orderId: order._id });
+
+      if (!invoice) {
+        // Generate invoice number using Counter
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = today.getMonth() + 1;
+        const financialYearStart = month < 4 ? year - 1 : year;
+        const financialYearEnd = financialYearStart + 1;
+        const counterId = `invoice_${outletId}_FY${financialYearStart}-${financialYearEnd}`;
+        const financialYearDate = new Date(
+          `${financialYearStart}-04-01T00:00:00.000Z`
+        );
+
+        const counter = await Counter.findOneAndUpdate(
+          { _id: counterId },
+          {
+            $inc: { sequence: 1 },
+            $setOnInsert: {
+              date: financialYearDate,
+              type: "invoice",
+            },
+          },
+          {
+            upsert: true,
+            new: true,
+          }
+        );
+
+        const invoiceNumber = counter.sequence.toString().padStart(3, "0");
+
+        // Create new invoice
+        invoice = new Invoice({
+          outletId,
+          orderId: order._id,
+          invoiceNumber,
+          items: order.items,
+          subtotal: order.subtotal,
+          taxAmount: order.taxAmount,
+          total: order.total,
+          customer: order.customer,
+          paymentMethod,
+          paymentStatus: "paid",
+          paidAmount: order.total,
+          createdBy: req.user!.userId,
+          paidAt: new Date(),
+        });
+        await invoice.save();
+        console.log(
+          `✅ Invoice ${invoiceNumber} created for completed order ${order.orderNumber}`
+        );
+      } else {
+        // Update existing invoice to paid
+        invoice.paymentStatus = "paid";
+        invoice.paidAmount = order.total;
+        invoice.paidAt = new Date();
+        await invoice.save();
+        console.log(
+          `✅ Invoice ${invoice.invoiceNumber} updated for order ${order.orderNumber}`
+        );
+      }
+    } catch (invoiceError: any) {
+      console.error("Failed to create/update invoice:", invoiceError);
+      // Continue even if invoice creation fails
+    }
+
+    // Log activity
+    await staffService.logActivity({
+      userId: req.user!.userId,
+      outletId: outletId.toString(),
+      action: `Completed order #${order.orderNumber}`,
+      actionType: "order_completed",
+      metadata: { orderId: order._id, status: "completed" },
+      ipAddress: req.ip || "unknown",
+      userAgent: req.get("user-agent"),
+    });
+
+    res.json({
+      success: true,
+      data: order,
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      error: { message: error.message || "Failed to complete order" },
+    });
+  }
+};
+
 // Delete order
 export const deleteOrder = async (
   req: Request,
@@ -955,19 +1171,40 @@ export const deleteOrder = async (
       return;
     }
 
-    if (order.status !== "draft" && order.status !== "on_hold") {
-      res.status(400).json({
-        success: false,
-        error: { message: "Only draft or on-hold orders can be deleted" },
-      });
-      return;
+    // Soft delete: Mark order as inactive instead of deleting
+    order.isActive = false;
+    await order.save();
+
+    // Mark related KOT as inactive if exists
+    if (order.kotId) {
+      try {
+        const kot = await KOT.findById(order.kotId);
+        if (kot) {
+          kot.isActive = false;
+          await kot.save();
+          console.log(`✅ KOT ${order.kotId} marked as inactive`);
+        }
+      } catch (kotError: any) {
+        console.error("Failed to mark KOT as inactive:", kotError);
+      }
     }
 
-    await order.deleteOne();
+    // Mark related Invoice as inactive if exists
+    try {
+      const Invoice = (await import("../models/Invoice")).default;
+      const invoice = await Invoice.findOne({ orderId: order._id });
+      if (invoice) {
+        invoice.isActive = false;
+        await invoice.save();
+        console.log(`✅ Invoice for order ${id} marked as inactive`);
+      }
+    } catch (invoiceError: any) {
+      console.error("Failed to mark invoice as inactive:", invoiceError);
+    }
 
     res.json({
       success: true,
-      data: { message: "Order deleted successfully" },
+      data: { message: "Order marked as inactive successfully" },
     });
   } catch (error: any) {
     res.status(500).json({

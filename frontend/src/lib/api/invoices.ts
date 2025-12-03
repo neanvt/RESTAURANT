@@ -46,7 +46,7 @@ export const invoiceAPI = {
   getInvoices: async (
     filters?: InvoiceFilters,
     page: number = 1,
-    limit: number = 20
+    limit: number = 1000
   ): Promise<InvoiceListResponse> => {
     const params = new URLSearchParams();
 

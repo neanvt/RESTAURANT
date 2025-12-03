@@ -303,15 +303,22 @@ export const getInvoices = async (
       limit = "20",
     } = req.query;
 
-    const filter: any = { outletId };
+    const filter: any = {
+      outletId,
+      $or: [{ isActive: true }, { isActive: { $exists: false } }],
+    };
 
     if (paymentStatus) filter.paymentStatus = paymentStatus;
     if (paymentMethod) filter.paymentMethod = paymentMethod;
     if (search) {
-      filter.$or = [
-        { invoiceNumber: { $regex: search, $options: "i" } },
-        { "customer.name": { $regex: search, $options: "i" } },
-        { "customer.phone": { $regex: search, $options: "i" } },
+      filter.$and = [
+        {
+          $or: [
+            { invoiceNumber: { $regex: search, $options: "i" } },
+            { "customer.name": { $regex: search, $options: "i" } },
+            { "customer.phone": { $regex: search, $options: "i" } },
+          ],
+        },
       ];
     }
     if (startDate || endDate) {
@@ -370,7 +377,11 @@ export const getInvoice = async (
       return;
     }
 
-    const invoice = await Invoice.findOne({ _id: id, outletId })
+    const invoice = await Invoice.findOne({
+      _id: id,
+      outletId,
+      $or: [{ isActive: true }, { isActive: { $exists: false } }],
+    })
       .populate("orderId", "orderNumber tableNumber")
       .populate("createdBy", "name email");
 
@@ -495,7 +506,11 @@ export const getInvoiceByOrder = async (
       return;
     }
 
-    const invoice = await Invoice.findOne({ orderId, outletId })
+    const invoice = await Invoice.findOne({
+      orderId,
+      outletId,
+      $or: [{ isActive: true }, { isActive: { $exists: false } }],
+    })
       .populate("orderId", "orderNumber tableNumber")
       .populate("createdBy", "name email");
 

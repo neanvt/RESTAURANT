@@ -35,6 +35,7 @@ export interface IInvoice extends Document {
   paymentStatus: "pending" | "paid";
   paidAmount: number;
   notes?: string;
+  isActive: boolean;
   createdBy: mongoose.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
@@ -97,6 +98,7 @@ const InvoiceSchema = new Schema<IInvoice>(
     },
     paidAmount: { type: Number, default: 0 },
     notes: { type: String },
+    isActive: { type: Boolean, default: true, index: true },
     createdBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
     paidAt: { type: Date },
   },

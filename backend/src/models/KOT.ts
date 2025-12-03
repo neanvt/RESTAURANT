@@ -16,6 +16,7 @@ export interface IKOT extends Document {
   status: "pending" | "in_progress" | "completed";
   tableNumber?: string;
   notes?: string;
+  isActive: boolean;
   createdBy: mongoose.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
@@ -52,6 +53,7 @@ const KOTSchema = new Schema<IKOT>(
     },
     tableNumber: { type: String },
     notes: { type: String },
+    isActive: { type: Boolean, default: true, index: true },
     createdBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
     completedAt: { type: Date },
   },

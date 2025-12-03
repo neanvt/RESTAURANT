@@ -32,6 +32,7 @@ export interface IOrder extends Document {
   tableNumber?: string;
   kotId?: mongoose.Types.ObjectId;
   notes?: string;
+  isActive: boolean;
   createdBy: mongoose.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
@@ -87,6 +88,7 @@ const OrderSchema = new Schema<IOrder>(
     tableNumber: { type: String },
     kotId: { type: Schema.Types.ObjectId, ref: "KOT" },
     notes: { type: String },
+    isActive: { type: Boolean, default: true, index: true },
     createdBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
     completedAt: { type: Date },
   },

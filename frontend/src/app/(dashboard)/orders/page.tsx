@@ -13,6 +13,8 @@ import {
   Eye,
   Filter,
   ArrowLeft,
+  Edit2,
+  Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,6 +43,7 @@ export default function OrdersPage() {
     holdOrder,
     resumeOrder,
     cancelOrder,
+    completeOrder,
     deleteOrder,
     generateKOT,
     setFilters,
@@ -109,10 +112,24 @@ export default function OrdersPage() {
     }
   };
 
-  const handleCancel = async (order: Order) => {
+  const handleEdit = async (order: Order) => {
+    try {
+      const orderId = order.id || (order as any)._id;
+      if (!orderId) {
+        throw new Error("Order ID is missing");
+      }
+      // Redirect to order creation page with order data
+      router.push(`/orders/create?editOrderId=${orderId}`);
+    } catch (error: any) {
+      console.error("Edit order error:", error);
+      toast.error(error.message || "Failed to edit order");
+    }
+  };
+
+  const handleDelete = async (order: Order) => {
     if (
       confirm(
-        "Are you sure you want to cancel this order? This action cannot be undone."
+        "Are you sure you want to remove this order? This will mark the order, KOT, and invoice as inactive (they won't be deleted permanently)."
       )
     ) {
       try {
@@ -122,12 +139,58 @@ export default function OrdersPage() {
           throw new Error("Order ID is missing");
         }
         await deleteOrder(orderId);
+        toast.success("Order removed successfully");
+        // Refresh the orders list
+        await fetchOrders();
+      } catch (error: any) {
+        console.error("Remove order error:", error);
+        toast.error(error.message || "Failed to remove order");
+      }
+    }
+  };
+
+  const handleCancel = async (order: Order) => {
+    if (
+      confirm(
+        "Are you sure you want to cancel this order? This will update the order status to cancelled."
+      )
+    ) {
+      try {
+        const orderId = order.id || (order as any)._id;
+        if (!orderId) {
+          console.error("Order object:", order);
+          throw new Error("Order ID is missing");
+        }
+        await cancelOrder(orderId);
         toast.success("Order cancelled successfully");
         // Refresh the orders list
         await fetchOrders();
       } catch (error: any) {
-        console.error("Delete order error:", error);
+        console.error("Cancel order error:", error);
         toast.error(error.message || "Failed to cancel order");
+      }
+    }
+  };
+
+  const handleComplete = async (order: Order) => {
+    if (
+      confirm(
+        "Complete this order? This will mark the order as completed and create/update the invoice as paid."
+      )
+    ) {
+      try {
+        const orderId = order.id || (order as any)._id;
+        if (!orderId) {
+          console.error("Order object:", order);
+          throw new Error("Order ID is missing");
+        }
+        await completeOrder(orderId);
+        toast.success("Order completed successfully");
+        // Refresh the orders list
+        await fetchOrders();
+      } catch (error: any) {
+        console.error("Complete order error:", error);
+        toast.error(error.message || "Failed to complete order");
       }
     }
   };
@@ -228,6 +291,7 @@ export default function OrdersPage() {
                   <SelectItem value="on_hold">On Hold</SelectItem>
                   <SelectItem value="completed">Completed</SelectItem>
                   <SelectItem value="cancelled">Cancelled</SelectItem>
+                  <SelectItem value="inactive">Inactive/Removed</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -290,8 +354,8 @@ export default function OrdersPage() {
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
-                      <h3 className="font-semibold text-gray-900">
-                        #{order.orderNumber.split("-").pop()}
+                      <h3 className="font-semibold text-gray-900 text-base">
+                        #{order.orderNumber}
                       </h3>
                       <Badge
                         className={cn(
@@ -335,7 +399,7 @@ export default function OrdersPage() {
                 </div>
 
                 {/* Action Buttons */}
-                <div className="flex gap-1.5">
+                <div className="flex gap-1.5 flex-wrap">
                   <Button
                     size="sm"
                     variant="outline"
@@ -346,6 +410,17 @@ export default function OrdersPage() {
                   >
                     <Eye className="h-3 w-3 mr-1" />
                     View
+                  </Button>
+
+                  {/* Edit button - show for all orders */}
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleEdit(order)}
+                    className="h-7 px-2 text-xs text-blue-600 border-blue-600 hover:bg-blue-50"
+                  >
+                    <Edit2 className="h-3 w-3 mr-1" />
+                    Edit
                   </Button>
 
                   {order.status === "draft" && (
@@ -415,20 +490,43 @@ export default function OrdersPage() {
                     </Button>
                   )}
 
-                  {(order.status === "draft" ||
-                    order.status === "on_hold" ||
-                    order.status === "kot_generated") &&
-                    index === 0 && (
+                  {/* Complete button - show for orders that are not completed or cancelled */}
+                  {order.status !== "completed" &&
+                    order.status !== "cancelled" && (
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => handleCancel(order)}
-                        className="h-7 px-2 text-xs text-red-600 border-red-600 hover:bg-red-50"
+                        onClick={() => handleComplete(order)}
+                        className="h-7 px-2 text-xs text-green-600 border-green-600 hover:bg-green-50"
                       >
-                        <XCircle className="h-3 w-3 mr-1" />
-                        Cancel
+                        <CheckCircle className="h-3 w-3 mr-1" />
+                        Complete
                       </Button>
                     )}
+
+                  {/* Cancel button - show for orders that are not already cancelled */}
+                  {order.status !== "cancelled" && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleCancel(order)}
+                      className="h-7 px-2 text-xs text-orange-600 border-orange-600 hover:bg-orange-50"
+                    >
+                      <XCircle className="h-3 w-3 mr-1" />
+                      Cancel
+                    </Button>
+                  )}
+
+                  {/* Remove button - show for all orders (soft delete/mark inactive) */}
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleDelete(order)}
+                    className="h-7 px-2 text-xs text-red-600 border-red-600 hover:bg-red-50"
+                  >
+                    <Trash2 className="h-3 w-3 mr-1" />
+                    Remove
+                  </Button>
                 </div>
               </div>
             ))}

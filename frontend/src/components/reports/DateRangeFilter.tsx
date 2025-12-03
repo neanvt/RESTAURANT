@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 
 type DatePreset =
   | "today"
+  | "yesterday"
   | "lastWeek"
   | "thisMonth"
   | "lastMonth"
@@ -45,6 +46,14 @@ const getDateRange = (preset: DatePreset): DateRange => {
       return {
         startDate: formatDate(today),
         endDate: formatDate(today),
+      };
+
+    case "yesterday":
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+      return {
+        startDate: formatDate(yesterday),
+        endDate: formatDate(yesterday),
       };
 
     case "lastWeek":
@@ -146,6 +155,7 @@ export default function DateRangeFilter({
 
   const presets: { label: string; value: DatePreset }[] = [
     { label: "Today", value: "today" },
+    { label: "Yesterday", value: "yesterday" },
     { label: "Last Week", value: "lastWeek" },
     { label: "This Month", value: "thisMonth" },
     { label: "Last Month", value: "lastMonth" },

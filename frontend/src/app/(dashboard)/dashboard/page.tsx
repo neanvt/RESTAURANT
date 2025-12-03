@@ -4,18 +4,20 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   ChevronDown,
-  Printer,
   CheckCircle,
   Clock,
   UtensilsCrossed,
   Store,
   ChevronRight,
   RefreshCw,
+  Printer,
+  UserPlus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useReportStore } from "@/store/reportStore";
 import { useOutletStore } from "@/store/outletStore";
+import { useBluetoothPrinter } from "@/hooks/useBluetoothPrinter";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
 import OutletSelectorModal from "@/components/outlets/OutletSelectorModal";
@@ -25,9 +27,7 @@ export default function DashboardPage() {
   const router = useRouter();
   const { dashboardStats, fetchDashboardStats, isLoading } = useReportStore();
   const { currentOutlet } = useOutletStore();
-  const [printerStatus, setPrinterStatus] = useState<"online" | "offline">(
-    "offline"
-  );
+  const { isConnected, isConnecting, connect } = useBluetoothPrinter();
   const [showOutletModal, setShowOutletModal] = useState(false);
 
   useEffect(() => {
@@ -113,34 +113,49 @@ export default function DashboardPage() {
           <CardContent className="p-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-gray-100 rounded-lg">
-                  <Printer className="h-5 w-5 text-gray-600" />
+                <div
+                  className={cn(
+                    "p-2 rounded-lg",
+                    isConnected ? "bg-green-100" : "bg-gray-100"
+                  )}
+                >
+                  <Printer
+                    className={cn(
+                      "h-5 w-5",
+                      isConnected ? "text-green-700" : "text-gray-600"
+                    )}
+                  />
                 </div>
                 <span className="text-sm text-gray-700">
-                  Your printer is {printerStatus}
+                  Bluetooth Printer {isConnected ? "Connected" : "Not Connected"}
                 </span>
               </div>
               <div className="flex items-center gap-2">
                 <span
                   className={cn(
                     "text-xs px-2 py-1 rounded-full font-medium",
-                    printerStatus === "online"
+                    isConnected
                       ? "bg-green-100 text-green-700"
                       : "bg-gray-100 text-gray-600"
                   )}
                 >
-                  {printerStatus === "online" ? "Online" : "Offline"}
+                  {isConnected ? "Online" : "Offline"}
                 </span>
                 <button
-                  onClick={() =>
-                    setPrinterStatus(
-                      printerStatus === "online" ? "offline" : "online"
-                    )
-                  }
-                  className="p-1 hover:bg-gray-100 rounded-full transition-colors"
-                  title="Toggle printer status"
+                  onClick={connect}
+                  disabled={isConnecting || isConnected}
+                  className={cn(
+                    "p-1 hover:bg-gray-100 rounded-full transition-colors",
+                    (isConnecting || isConnected) && "opacity-50 cursor-not-allowed"
+                  )}
+                  title={isConnected ? "Already connected" : "Connect to printer"}
                 >
-                  <RefreshCw className="h-4 w-4 text-gray-600" />
+                  <RefreshCw
+                    className={cn(
+                      "h-4 w-4 text-gray-600",
+                      isConnecting && "animate-spin"
+                    )}
+                  />
                 </button>
               </div>
             </div>
@@ -345,6 +360,17 @@ export default function DashboardPage() {
                   <Store className="h-4 w-4 text-purple-600" />
                 </div>
                 <span className="text-sm">Manage Customers</span>
+              </Button>
+
+              <Button
+                variant="outline"
+                className="w-full justify-start"
+                onClick={() => router.push("/staff/invite")}
+              >
+                <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center mr-3">
+                  <UserPlus className="h-4 w-4 text-orange-600" />
+                </div>
+                <span className="text-sm">Invite Staff</span>
               </Button>
             </div>
           </CardContent>
