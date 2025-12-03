@@ -127,7 +127,8 @@ export default function DashboardPage() {
                   />
                 </div>
                 <span className="text-sm text-gray-700">
-                  Bluetooth Printer {isConnected ? "Connected" : "Not Connected"}
+                  Bluetooth Printer{" "}
+                  {isConnected ? "Connected" : "Not Connected"}
                 </span>
               </div>
               <div className="flex items-center gap-2">
@@ -146,9 +147,12 @@ export default function DashboardPage() {
                   disabled={isConnecting || isConnected}
                   className={cn(
                     "p-1 hover:bg-gray-100 rounded-full transition-colors",
-                    (isConnecting || isConnected) && "opacity-50 cursor-not-allowed"
+                    (isConnecting || isConnected) &&
+                      "opacity-50 cursor-not-allowed"
                   )}
-                  title={isConnected ? "Already connected" : "Connect to printer"}
+                  title={
+                    isConnected ? "Already connected" : "Connect to printer"
+                  }
                 >
                   <RefreshCw
                     className={cn(

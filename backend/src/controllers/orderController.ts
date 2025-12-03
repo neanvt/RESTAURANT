@@ -712,7 +712,10 @@ export const generateKOT = async (
       try {
         kotNumber = await generateKOTNumber(outletId.toString());
 
-        // Convert userId string to ObjectId
+        // Convert userId string to ObjectId with validation
+        if (!req.user!.userId || !Types.ObjectId.isValid(req.user!.userId)) {
+          throw new Error(`Invalid user ID: ${req.user!.userId}`);
+        }
         const createdByObjectId = new Types.ObjectId(req.user!.userId);
 
         console.log(`🔍 Creating KOT with data:`, {
@@ -723,17 +726,37 @@ export const generateKOT = async (
           createdBy: createdByObjectId.toString(),
         });
 
-        kot = await KOT.create({
-          outletId,
-          orderId: order._id,
-          kotNumber,
-          items: order.items.map((item) => ({
+        // Validate items before creating KOT
+        if (!order.items || order.items.length === 0) {
+          throw new Error("Order has no items");
+        }
+
+        const kotItems = order.items.map((item) => {
+          if (!item.item) {
+            throw new Error(`Order item missing item reference: ${JSON.stringify(item)}`);
+          }
+          if (!item.name) {
+            throw new Error(`Order item missing name: ${JSON.stringify(item)}`);
+          }
+          if (!item.quantity || item.quantity < 1) {
+            throw new Error(`Invalid quantity for item ${item.name}: ${item.quantity}`);
+          }
+          return {
             item: item.item,
             name: item.name,
             quantity: item.quantity,
             notes: item.notes,
-            status: "pending",
-          })),
+            status: "pending" as const,
+          };
+        });
+
+        console.log(`🔍 Prepared ${kotItems.length} items for KOT`);
+
+        kot = await KOT.create({
+          outletId,
+          orderId: order._id,
+          kotNumber,
+          items: kotItems,
           status: "pending",
           tableNumber: order.tableNumber,
           notes: order.notes,
@@ -761,6 +784,12 @@ export const generateKOT = async (
         }
 
         console.error("❌ KOT creation failed with error:", error);
+        console.error("Error name:", error.name);
+        console.error("Error message:", error.message);
+        console.error("Error code:", error.code);
+        if (error.errors) {
+          console.error("Validation errors:", JSON.stringify(error.errors, null, 2));
+        }
 
         throw error;
       }
