@@ -10,6 +10,7 @@ The application was experiencing daily duplicate key errors when generating KOT 
 4. **Conflict**: When today's counter reaches a number that exists from yesterday, MongoDB throws a duplicate key error
 
 ### Example Scenario:
+
 ```
 Yesterday (Dec 3): KOT #060 created
 Today (Dec 4): Counter starts at 001
@@ -35,6 +36,7 @@ Changed the KOT number format to include the date prefix:
 **New Format**: `0412-001, 0412-002, 0412-003` (DDMM-XXX)
 
 This ensures KOT numbers are unique across days:
+
 - December 3rd: `0312-001, 0312-002, ...`
 - December 4th: `0412-001, 0412-002, ...`
 
@@ -46,11 +48,13 @@ This ensures KOT numbers are unique across days:
 // Updated generateKOTNumber function
 const generateKOTNumber = async (outletId: string): Promise<string> => {
   // ... existing code ...
-  
+
   // NEW: Format includes date to avoid conflicts
   const dayMonth = `${day}${month}`;
-  const formattedNumber = `${dayMonth}-${counter.sequence.toString().padStart(3, "0")}`;
-  
+  const formattedNumber = `${dayMonth}-${counter.sequence
+    .toString()
+    .padStart(3, "0")}`;
+
   return formattedNumber;
 };
 ```
@@ -75,6 +79,7 @@ node backend/cleanup-old-kots.js
 ## Testing
 
 The fix has been tested with the retry mechanism already in place:
+
 1. Counter increments atomically
 2. If duplicate occurs (edge case), retry logic generates new number
 3. Date prefix ensures no conflicts with previous days
@@ -82,6 +87,7 @@ The fix has been tested with the retry mechanism already in place:
 ## Migration
 
 **No database migration required!** The change is forward-compatible:
+
 - Old KOTs: Keep their old format (001, 002, etc.)
 - New KOTs: Use new format (0412-001, etc.)
 - Both can coexist in the database
@@ -89,6 +95,7 @@ The fix has been tested with the retry mechanism already in place:
 ## Monitoring
 
 Monitor the logs for these messages:
+
 - `✅ Generated KOT number: DDMM-XXX` - Successful generation
 - `⚠️ Duplicate KOT key error` - Should not occur anymore
 - `✅ KOT created successfully` - Successful creation
@@ -109,6 +116,7 @@ Monitor the logs for these messages:
 ## Technical Notes
 
 ### Counter Collection Structure
+
 ```javascript
 {
   _id: "kot_<outletId>_YYYY-MM-DD",  // Resets daily
@@ -119,6 +127,7 @@ Monitor the logs for these messages:
 ```
 
 ### KOT Collection Index
+
 ```javascript
 // Unique index - ensures no duplicate kotNumber per outlet
 { outletId: 1, kotNumber: 1 }, { unique: true }

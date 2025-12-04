@@ -60,6 +60,11 @@ export class StaffService {
       }
     } else {
       // Create new user with currentOutlet set to the outlet they're being invited to
+      // Set default password for new invited users
+      const bcrypt = await import("bcrypt");
+      const DEFAULT_PASSWORD = "Utkranti@123";
+      const hashedPassword = await bcrypt.hash(DEFAULT_PASSWORD, 10);
+
       user = await User.create({
         phone: data.phone,
         name: data.name,
@@ -69,6 +74,8 @@ export class StaffService {
         permissions: data.permissions || this.getDefaultPermissions(data.role),
         invitedBy: data.invitedBy,
         status: "invited",
+        password: hashedPassword,
+        requirePasswordChange: true,
         isActive: true,
       });
     }

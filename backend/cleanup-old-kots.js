@@ -44,7 +44,9 @@ const cleanupOldKOTs = async () => {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-    console.log(`\n🔍 Looking for KOTs older than ${thirtyDaysAgo.toLocaleDateString()}...`);
+    console.log(
+      `\n🔍 Looking for KOTs older than ${thirtyDaysAgo.toLocaleDateString()}...`
+    );
 
     // Find old completed KOTs
     const oldKOTs = await KOT.find({
@@ -53,7 +55,9 @@ const cleanupOldKOTs = async () => {
       isActive: true,
     });
 
-    console.log(`📊 Found ${oldKOTs.length} old completed KOTs to mark as inactive`);
+    console.log(
+      `📊 Found ${oldKOTs.length} old completed KOTs to mark as inactive`
+    );
 
     if (oldKOTs.length === 0) {
       console.log("✅ No old KOTs to cleanup");
