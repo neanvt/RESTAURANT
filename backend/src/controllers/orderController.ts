@@ -130,8 +130,11 @@ const generateKOTNumber = async (outletId: string): Promise<string> => {
       throw new Error("Failed to generate KOT counter");
     }
 
-    // Format: 001, 002, 003, etc. (simple sequential, resets daily)
-    const formattedNumber = counter.sequence.toString().padStart(3, "0");
+    // Format: DDMMYY-001, DDMMYY-002 etc. (date prefix + sequential, resets daily)
+    // This ensures uniqueness even if old KOTs exist from previous days and across years
+    const yearShort = year.toString().slice(-2);
+    const dayMonthYear = `${day}${month}${yearShort}`;
+    const formattedNumber = `${dayMonthYear}-${counter.sequence.toString().padStart(3, "0")}`;
 
     console.log(
       `✅ Generated KOT number: ${formattedNumber} for outlet ${outletId} (date: ${dateStr}, sequence: ${counter.sequence})`
