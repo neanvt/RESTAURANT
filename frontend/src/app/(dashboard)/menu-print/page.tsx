@@ -119,8 +119,8 @@ export default function MenuPrintPage() {
       </div>
 
       {/* Printable Menu */}
-      <div className="print-menu-container bg-gray-50 print:bg-white min-h-screen p-4 print:p-0 pb-24">
-        <div className="max-w-4xl mx-auto bg-white print:shadow-none shadow-lg print:max-w-full">
+      <div className="print-menu-container bg-gray-50 print:bg-white min-h-screen p-4 print:p-0 pb-24 print:pb-0 flex flex-col">
+        <div className="max-w-4xl mx-auto bg-white print:shadow-none shadow-lg print:max-w-full flex-1 flex flex-col">
           {/* Header Section - 3 Column Layout */}
           <div className="menu-header p-4 print:p-3 border-b-2 print:border-b border-orange-500">
             <div className="grid grid-cols-3 gap-3 print:gap-2 items-center">
@@ -214,7 +214,7 @@ export default function MenuPrintPage() {
           </div>
 
           {/* Menu Items Grid */}
-          <div className="p-4 print:p-2">
+          <div className="p-4 print:p-2 flex-1">
             {menuData.categories.map((category) => (
               <div key={category.categoryId} className="mb-3 print:mb-2">
                 <h3 className="text-lg print:text-sm font-bold text-gray-900 mb-2 print:mb-1 pb-1 border-b border-orange-300">
@@ -233,13 +233,13 @@ export default function MenuPrintPage() {
                             className="mt-0.5 print:opacity-100 print:w-3 print:h-3"
                             readOnly
                           />
-                          <span className="text-sm print:text-[11px] font-medium text-gray-900">
+                          <span className="text-xl print:text-[17px] font-medium text-gray-900">
                             {item.name}
                           </span>
                         </div>
                       </div>
                       <div className="flex items-center gap-1 shrink-0">
-                        <span className="text-sm print:text-[11px] font-bold text-gray-900">
+                        <span className="text-xl print:text-[17px] font-bold text-gray-900">
                           ₹{item.price}
                         </span>
                       </div>
@@ -251,7 +251,7 @@ export default function MenuPrintPage() {
           </div>
 
           {/* Footer */}
-          <div className="py-2 print:py-1.5 px-4 print:px-2 border-t-2 print:border-t border-orange-500 bg-orange-50">
+          <div className="py-2 print:py-1.5 px-4 print:px-2 border-t-2 print:border-t border-orange-500 bg-orange-50 mt-auto">
             <div className="flex items-center justify-between text-xs print:text-[10px]">
               <div className="text-left space-y-0.5">
                 <p className="font-bold text-gray-900">
@@ -316,7 +316,9 @@ export default function MenuPrintPage() {
             padding: 0 1cm !important;
             background: white !important;
             margin: 0 !important;
-            min-height: auto !important;
+            min-height: 100vh !important;
+            display: flex !important;
+            flex-direction: column !important;
             box-sizing: border-box;
           }
 

@@ -733,13 +733,17 @@ export const generateKOT = async (
 
         const kotItems = order.items.map((item) => {
           if (!item.item) {
-            throw new Error(`Order item missing item reference: ${JSON.stringify(item)}`);
+            throw new Error(
+              `Order item missing item reference: ${JSON.stringify(item)}`
+            );
           }
           if (!item.name) {
             throw new Error(`Order item missing name: ${JSON.stringify(item)}`);
           }
           if (!item.quantity || item.quantity < 1) {
-            throw new Error(`Invalid quantity for item ${item.name}: ${item.quantity}`);
+            throw new Error(
+              `Invalid quantity for item ${item.name}: ${item.quantity}`
+            );
           }
           return {
             item: item.item,
@@ -788,7 +792,10 @@ export const generateKOT = async (
         console.error("Error message:", error.message);
         console.error("Error code:", error.code);
         if (error.errors) {
-          console.error("Validation errors:", JSON.stringify(error.errors, null, 2));
+          console.error(
+            "Validation errors:",
+            JSON.stringify(error.errors, null, 2)
+          );
         }
 
         throw error;
