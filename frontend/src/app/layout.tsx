@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter, Roboto_Mono, Source_Sans_3 } from "next/font/google";
 import { Toaster } from "sonner";
 import PWAInit from "@/components/PWAInit";
+import InstallPWA from "@/components/InstallPWA";
 import BluetoothPrinterManager from "@/components/BluetoothPrinterManager";
 import "./globals.css";
 
@@ -86,6 +87,7 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <PWAInit />
+        <InstallPWA />
         {children}
         <BluetoothPrinterManager />
         <Toaster position="top-center" richColors />
