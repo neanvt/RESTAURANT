@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import OTPInput from "@/components/auth/OTPInput";
 import { useAuth } from "@/hooks/useAuth";
+import { useAuthStore } from "@/store/authStore";
 import * as authApi from "@/lib/api/auth";
 import { Loader2, ArrowLeft } from "lucide-react";
 
@@ -21,6 +22,7 @@ export default function VerifyClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const phone = searchParams.get("phone") || "";
+  const user = useAuthStore((state) => state.user);
 
   const {
     verifyOTP,
@@ -99,7 +101,19 @@ export default function VerifyClient() {
     const result = await verifyOTP(otp, name || undefined);
 
     if (result.success) {
-      router.push("/dashboard");
+      // Wait a moment for auth store to update
+      setTimeout(() => {
+        const authStorage = localStorage.getItem("auth-storage");
+        if (authStorage) {
+          const parsed = JSON.parse(authStorage);
+          const currentUser = parsed.state?.user;
+          if (currentUser?.requirePasswordChange) {
+            router.push("/change-password");
+            return;
+          }
+        }
+        router.push("/dashboard");
+      }, 100);
     } else {
       setError(result.error || "Verification failed. Please try again.");
     }

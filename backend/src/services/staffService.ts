@@ -54,6 +54,16 @@ export class StaffService {
         if (!user.currentOutlet) {
           user.currentOutlet = new mongoose.Types.ObjectId(data.outletId);
         }
+        
+        // Set default password if user doesn't have one
+        if (!user.password) {
+          const bcrypt = await import("bcrypt");
+          const DEFAULT_PASSWORD = "Utkranti@123";
+          const hashedPassword = await bcrypt.hash(DEFAULT_PASSWORD, 10);
+          user.password = hashedPassword;
+          user.requirePasswordChange = true;
+        }
+        
         await user.save();
       } else {
         throw new Error("User already added to this outlet");
