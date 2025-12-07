@@ -66,10 +66,20 @@ export class OutletService {
    */
   async getOutletsByUser(userId: string): Promise<IOutlet[]> {
     try {
-      const outlets = await Outlet.find({
-        ownerId: userId,
-        isActive: true,
-      }).sort({ createdAt: -1 });
+      // First get the user to check their outlets array
+      const user = await User.findById(userId).select('outlets role');
+      
+      if (!user) {
+        return [];
+      }
+
+      // If user has outlets in their array (staff/secondary_admin), return those
+      // Otherwise, return outlets they own (primary_admin)
+      const query = user.outlets && user.outlets.length > 0
+        ? { _id: { $in: user.outlets }, isActive: true }
+        : { ownerId: userId, isActive: true };
+
+      const outlets = await Outlet.find(query).sort({ createdAt: -1 });
 
       return outlets;
     } catch (error) {
