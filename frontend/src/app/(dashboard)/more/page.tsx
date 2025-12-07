@@ -20,10 +20,15 @@ import {
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { useAuth } from "@/hooks/useAuth";
+import { useAuthStore } from "@/store/authStore";
 
 export default function MorePage() {
   const router = useRouter();
   const { logout } = useAuth();
+  const user = useAuthStore((state) => state.user);
+  
+  // Check if user is admin (primary_admin or secondary_admin)
+  const isAdmin = user?.role === "primary_admin" || user?.role === "secondary_admin";
 
   const menuItems = [
     {
@@ -130,19 +135,24 @@ export default function MorePage() {
     <div className="min-h-screen bg-gray-50 pb-20">
       {/* Header */}
       <div className="bg-white border-b px-4 py-4 sticky top-0 z-10">
-        <h1 className="text-xl font-bold text-gray-900">More</h1>
-        <p className="text-sm text-gray-600">Manage your restaurant</p>
-      </div>
-
       <div className="p-4 space-y-3">
         {/* Menu Items */}
         {menuItems.map((item) => {
+          // Hide staff management for non-admin users
+          if (item.path === "/staff" && !isAdmin) {
+            return null;
+          }
+          
           const Icon = item.icon;
           return (
             <Card
               key={item.path}
               className="cursor-pointer hover:shadow-md transition-shadow"
               onClick={() => router.push(item.path)}
+            >
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
             >
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">

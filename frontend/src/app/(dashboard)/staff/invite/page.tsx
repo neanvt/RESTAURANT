@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronRight, UserPlus } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -17,10 +17,20 @@ import {
 import { staffApi } from "@/lib/api/staff";
 import { StaffRole, ROLE_LABELS } from "@/types/staff";
 import { toast } from "sonner";
+import { useAuthStore } from "@/store/authStore";
 
 export default function InviteStaffPage() {
   const router = useRouter();
+  const user = useAuthStore((state) => state.user);
   const [loading, setLoading] = useState(false);
+  
+  // Check if user has permission to invite staff
+  useEffect(() => {
+    if (user && user.role !== "primary_admin" && user.role !== "secondary_admin") {
+      toast.error("You don't have permission to access this page");
+      router.push("/dashboard");
+    }
+  }, [user, router]);
   const [formData, setFormData] = useState({
     phone: "",
     name: "",

@@ -8,11 +8,21 @@ import { staffApi } from "@/lib/api/staff";
 import { StaffActivity } from "@/types/staff";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { useAuthStore } from "@/store/authStore";
 
 export default function StaffActivityPage() {
   const router = useRouter();
+  const user = useAuthStore((state) => state.user);
   const [activities, setActivities] = useState<StaffActivity[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  // Check if user has permission to view staff activity
+  useEffect(() => {
+    if (user && user.role !== "primary_admin" && user.role !== "secondary_admin") {
+      toast.error("You don't have permission to access this page");
+      router.push("/dashboard");
+    }
+  }, [user, router]);
 
   useEffect(() => {
     loadActivities();

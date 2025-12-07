@@ -8,11 +8,21 @@ import { Button } from "@/components/ui/button";
 import { staffApi } from "@/lib/api/staff";
 import { Staff, ROLE_LABELS, STATUS_LABELS } from "@/types/staff";
 import { toast } from "sonner";
+import { useAuthStore } from "@/store/authStore";
 
 export default function StaffPage() {
   const router = useRouter();
+  const user = useAuthStore((state) => state.user);
   const [staff, setStaff] = useState<Staff[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  // Check if user has permission to view staff
+  useEffect(() => {
+    if (user && user.role !== "primary_admin" && user.role !== "secondary_admin") {
+      toast.error("You don't have permission to access this page");
+      router.push("/dashboard");
+    }
+  }, [user, router]);
 
   useEffect(() => {
     loadStaff();
