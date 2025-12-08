@@ -15,10 +15,14 @@ export default function StaffPage() {
   const user = useAuthStore((state) => state.user);
   const [staff, setStaff] = useState<Staff[]>([]);
   const [loading, setLoading] = useState(true);
-  
+
   // Check if user has permission to view staff
   useEffect(() => {
-    if (user && user.role !== "primary_admin" && user.role !== "secondary_admin") {
+    if (
+      user &&
+      user.role !== "primary_admin" &&
+      user.role !== "secondary_admin"
+    ) {
       toast.error("You don't have permission to access this page");
       router.push("/dashboard");
     }
@@ -212,17 +216,19 @@ export default function StaffPage() {
         )}
       </div>
 
-      {/* Invite Staff Button */}
-      <div className="fixed bottom-20 left-0 right-0 p-4 bg-gradient-to-t from-gray-50 to-transparent pointer-events-none">
-        <Button
-          onClick={() => router.push("/staff/invite")}
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white pointer-events-auto"
-          size="lg"
-        >
-          <UserPlus className="h-5 w-5 mr-2" />
-          Invite Staff
-        </Button>
-      </div>
+      {/* Invite Staff Button - Only for primary_admin and secondary_admin */}
+      {(user?.role === "primary_admin" || user?.role === "secondary_admin") && (
+        <div className="fixed bottom-20 left-0 right-0 p-4 bg-gradient-to-t from-gray-50 to-transparent pointer-events-none">
+          <Button
+            onClick={() => router.push("/staff/invite")}
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white pointer-events-auto"
+            size="lg"
+          >
+            <UserPlus className="h-5 w-5 mr-2" />
+            Invite Staff
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

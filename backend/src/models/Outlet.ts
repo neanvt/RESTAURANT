@@ -48,6 +48,16 @@ export interface IOutlet extends Document {
     totalTables: number;
     tablePrefix: string;
   };
+  deliveryConfig?: {
+    enabled: boolean;
+    minimumOrder: number;
+    deliveryCharge: number;
+    freeDeliveryAbove: number;
+  };
+  menuDisplaySettings?: {
+    timingText?: string;
+    closedDay?: string;
+  };
   settings: {
     currency: string;
     language: string;
@@ -231,6 +241,39 @@ const OutletSchema: Schema = new Schema(
       tablePrefix: {
         type: String,
         default: "T",
+        trim: true,
+      },
+    },
+    deliveryConfig: {
+      enabled: {
+        type: Boolean,
+        default: true,
+      },
+      minimumOrder: {
+        type: Number,
+        default: 300,
+        min: 0,
+      },
+      deliveryCharge: {
+        type: Number,
+        default: 30,
+        min: 0,
+      },
+      freeDeliveryAbove: {
+        type: Number,
+        default: 500,
+        min: 0,
+      },
+    },
+    menuDisplaySettings: {
+      timingText: {
+        type: String,
+        default: "4:00PM to 8:30PM",
+        trim: true,
+      },
+      closedDay: {
+        type: String,
+        default: "Monday",
         trim: true,
       },
     },

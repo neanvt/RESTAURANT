@@ -1,12 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { ArrowLeft, Printer, Loader2, FileDown } from "lucide-react";
+import { useSearchParams } from "next/navigation";
+import { Loader2, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { reportsApi } from "@/lib/api/reports";
 import { toast } from "sonner";
-import { useOutletStore } from "@/store/outletStore";
 
 interface MenuItem {
   id: string;
@@ -53,24 +51,47 @@ interface MenuPrintData {
   totalItems: number;
 }
 
-export default function MenuPrintPage() {
-  const router = useRouter();
-  const { currentOutlet } = useOutletStore();
+export default function PrintMenuPage() {
+  const searchParams = useSearchParams();
+  const outletId = searchParams.get("outletId");
   const [loading, setLoading] = useState(true);
   const [menuData, setMenuData] = useState<MenuPrintData | null>(null);
 
   useEffect(() => {
-    fetchMenuData();
-  }, []);
+    if (outletId) {
+      fetchMenuData();
+    } else {
+      toast.error("Outlet ID is required");
+      setLoading(false);
+    }
+  }, [outletId]);
 
   const fetchMenuData = async () => {
     try {
       setLoading(true);
-      const data = await reportsApi.getMenuPrintData();
-      setMenuData(data);
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/reports/menu-current?outletId=${outletId}`,
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch menu data");
+      }
+
+      const result = await response.json();
+      // API returns { success: true, data: {...} }
+      if (result.success && result.data) {
+        setMenuData(result.data);
+      } else {
+        throw new Error(result.error?.message || "Failed to fetch menu data");
+      }
     } catch (error: any) {
       console.error("Failed to fetch menu data:", error);
-      toast.error("Failed to load menu data");
+      toast.error(error.message || "Failed to load menu data");
     } finally {
       setLoading(false);
     }
@@ -80,28 +101,17 @@ export default function MenuPrintPage() {
     window.print();
   };
 
-  const handleViewPublicUrl = () => {
-    const publicUrl = `${
-      process.env.NEXT_PUBLIC_APP_URL || window.location.origin
-    }/print-menu?outletId=${currentOutlet?._id}`;
-    window.open(publicUrl, "_blank");
+  const getShareableUrl = () => {
+    if (typeof window !== "undefined") {
+      return window.location.href;
+    }
+    return "";
   };
 
-  const handleCopyPublicUrl = () => {
-    const publicUrl = `${
-      process.env.NEXT_PUBLIC_APP_URL || window.location.origin
-    }/print-menu?outletId=${currentOutlet?._id}`;
-    navigator.clipboard.writeText(publicUrl);
-    toast.success("Public URL copied to clipboard!");
-  };
-
-  const handleExportPDF = () => {
-    // Open print dialog - user can select "Save as PDF"
-    // This uses browser's native print rendering which handles:
-    // - Proper text rendering without overlap
-    // - Page breaks that keep categories together with their items
-    // - Consistent formatting matching the print preview
-    window.print();
+  const handleCopyUrl = () => {
+    const url = getShareableUrl();
+    navigator.clipboard.writeText(url);
+    toast.success("URL copied to clipboard!");
   };
 
   if (loading) {
@@ -118,7 +128,14 @@ export default function MenuPrintPage() {
   if (!menuData) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <p className="text-gray-600">No menu data available</p>
+        <div className="text-center">
+          <p className="text-gray-600 mb-4">No menu data available</p>
+          {!outletId && (
+            <p className="text-sm text-gray-500">
+              Please provide an outlet ID in the URL
+            </p>
+          )}
+        </div>
       </div>
     );
   }
@@ -126,60 +143,24 @@ export default function MenuPrintPage() {
   return (
     <>
       {/* Print Controls - Hidden when printing */}
-      <div className="print:hidden sticky top-0 z-10 bg-white border-b px-4 py-3">
-        <div className="flex items-center justify-between max-w-7xl mx-auto">
-          <div className="flex items-center gap-3">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => router.back()}
-              className="shrink-0"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            <div>
-              <h1 className="text-lg font-bold">Print Menu</h1>
-              <p className="text-sm text-gray-600">
-                {menuData.totalItems} items available
-              </p>
-            </div>
-          </div>
-          <div className="flex gap-2">
-            <Button
-              onClick={handleCopyPublicUrl}
-              variant="outline"
-              className="gap-2"
-              size="sm"
-            >
-              Copy URL
-            </Button>
-            <Button
-              onClick={handleViewPublicUrl}
-              variant="outline"
-              className="gap-2"
-              size="sm"
-            >
-              View Public
-            </Button>
-            <Button
-              onClick={handleExportPDF}
-              variant="outline"
-              className="gap-2"
-            >
-              <FileDown className="h-4 w-4" />
-              Export PDF
-            </Button>
-            <Button onClick={handlePrint} className="gap-2">
-              <Printer className="h-4 w-4" />
-              Print Menu
-            </Button>
-          </div>
-        </div>
+      <div className="print:hidden fixed top-4 right-4 z-50 flex gap-2">
+        <Button
+          onClick={handleCopyUrl}
+          variant="outline"
+          className="gap-2 bg-white shadow-lg"
+          size="sm"
+        >
+          Copy URL
+        </Button>
+        <Button onClick={handlePrint} className="gap-2 shadow-lg">
+          <Printer className="h-4 w-4" />
+          Print
+        </Button>
       </div>
 
       {/* Printable Menu */}
-      <div className="print-menu-container bg-gray-50 print:bg-white min-h-screen p-4 print:p-0 pb-24 print:pb-0 flex flex-col px-[50px]">
-        <div className="w-full mx-auto bg-white print:shadow-none shadow-lg flex-1 flex flex-col">
+      <div className="print-menu-container bg-white min-h-screen print:p-0 flex flex-col px-[50px]">
+        <div className="w-full mx-auto bg-white flex-1 flex flex-col">
           {/* Header Section - 3 Column Layout */}
           <div className="menu-header p-4 print:p-3 border-b-2 print:border-b border-orange-500 px-[200px]">
             <div className="grid grid-cols-3 gap-3 print:gap-2 items-center">
@@ -191,12 +172,13 @@ export default function MenuPrintPage() {
                       `${
                         process.env.NEXT_PUBLIC_APP_URL ||
                         "http://localhost:3000"
-                      }/menu-select?outletId=${currentOutlet?._id || ""}`
+                      }/menu-select?outletId=${outletId}`
                     )}`}
                     alt="Menu QR"
                     width={150}
                     height={150}
                     className="mx-auto border print:border border-gray-300 print:w-32 print:h-32"
+                    crossOrigin="anonymous"
                   />
                 </div>
                 <p className="text-[10px] print:text-[8px] font-semibold text-gray-900">
@@ -251,6 +233,7 @@ export default function MenuPrintPage() {
                     width={150}
                     height={150}
                     className="mx-auto border print:border border-gray-300 print:w-32 print:h-32"
+                    crossOrigin="anonymous"
                   />
                 </div>
                 <p className="text-[10px] print:text-[8px] font-semibold text-gray-900">
@@ -307,7 +290,7 @@ export default function MenuPrintPage() {
 
           {/* Footer */}
           <div className="py-2 print:py-1.5 border-t-2 print:border-t border-orange-500 bg-orange-50 mt-auto">
-            <div className="px-[200px]">
+            <div>
               <div className="flex items-start justify-between gap-4 print:gap-2 text-xs print:text-[10px]">
                 <div className="text-left space-y-0.5 flex-shrink-0 min-w-[120px] print:min-w-[100px]">
                   <p className="font-bold text-gray-900 whitespace-nowrap">
@@ -340,12 +323,12 @@ export default function MenuPrintPage() {
                 <div className="text-right space-y-0.5 flex-shrink-0 min-w-[130px] print:min-w-[110px]">
                   {menuData.outlet.deliveryConfig?.enabled !== false && (
                     <>
-                      <p className="font-bold text-gray-900 whitespace-nowrap">
+                      <p className="font-bold text-gray-900 print:text-[15px] whitespace-nowrap">
                         Home Delivery
                       </p>
-                      <p className="text-[10px] print:text-[9px] text-gray-700 whitespace-nowrap">
+                      <p className="text-[10px] print:text-[12px] text-gray-700 whitespace-nowrap">
                         Min: ₹
-                        {menuData.outlet.deliveryConfig?.minimumOrder || 300} (₹
+                        {menuData.outlet.deliveryConfig?.minimumOrder || 150} (₹
                         {menuData.outlet.deliveryConfig?.deliveryCharge ||
                           30}{" "}
                         charge)

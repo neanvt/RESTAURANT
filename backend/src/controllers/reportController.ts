@@ -758,6 +758,16 @@ export const getMenuPrintData = async (
             whatsapp: outlet.contact.whatsapp,
           },
           operatingHours: outlet.operatingHours,
+          deliveryConfig: outlet.deliveryConfig || {
+            enabled: true,
+            minimumOrder: 300,
+            deliveryCharge: 30,
+            freeDeliveryAbove: 500,
+          },
+          menuDisplaySettings: outlet.menuDisplaySettings || {
+            timingText: "4:00PM to 8:30PM",
+            closedDay: "Monday",
+          },
         },
         categories: itemsByCategory,
         totalItems: items.length,

@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useReportStore } from "@/store/reportStore";
 import { useOutletStore } from "@/store/outletStore";
+import { useAuthStore } from "@/store/authStore";
 import { useBluetoothPrinter } from "@/hooks/useBluetoothPrinter";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
@@ -27,6 +28,7 @@ export default function DashboardPage() {
   const router = useRouter();
   const { dashboardStats, fetchDashboardStats, isLoading } = useReportStore();
   const { currentOutlet } = useOutletStore();
+  const { user } = useAuthStore();
   const { isConnected, isConnecting, connect } = useBluetoothPrinter();
   const [showOutletModal, setShowOutletModal] = useState(false);
 
@@ -366,16 +368,19 @@ export default function DashboardPage() {
                 <span className="text-sm">Manage Customers</span>
               </Button>
 
-              <Button
-                variant="outline"
-                className="w-full justify-start"
-                onClick={() => router.push("/staff/invite")}
-              >
-                <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center mr-3">
-                  <UserPlus className="h-4 w-4 text-orange-600" />
-                </div>
-                <span className="text-sm">Invite Staff</span>
-              </Button>
+              {(user?.role === "primary_admin" ||
+                user?.role === "secondary_admin") && (
+                <Button
+                  variant="outline"
+                  className="w-full justify-start"
+                  onClick={() => router.push("/staff/invite")}
+                >
+                  <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center mr-3">
+                    <UserPlus className="h-4 w-4 text-orange-600" />
+                  </div>
+                  <span className="text-sm">Invite Staff</span>
+                </Button>
+              )}
             </div>
           </CardContent>
         </Card>

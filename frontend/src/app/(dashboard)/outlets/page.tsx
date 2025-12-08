@@ -15,6 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useOutletStore } from "@/store/outletStore";
+import { useAuthStore } from "@/store/authStore";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
 import { getFullImageUrl } from "@/lib/imageUtils";
@@ -23,6 +24,7 @@ export default function OutletsPage() {
   const router = useRouter();
   const { outlets, currentOutlet, isLoading, fetchOutlets, selectOutlet } =
     useOutletStore();
+  const { user } = useAuthStore();
   const [switching, setSwitching] = useState<string | null>(null);
 
   useEffect(() => {
@@ -75,13 +77,16 @@ export default function OutletsPage() {
                 </p>
               </div>
             </div>
-            <Button
-              onClick={() => router.push("/new-outlet")}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Add
-            </Button>
+            {(user?.role === "primary_admin" ||
+              user?.role === "secondary_admin") && (
+              <Button
+                onClick={() => router.push("/new-outlet")}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add
+              </Button>
+            )}
           </div>
         </div>
       </div>
@@ -174,15 +179,18 @@ export default function OutletsPage() {
                             )}
                           </div>
                         </div>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            router.push(`/outlets/${outlet._id}/edit`);
-                          }}
-                          className="p-1.5 hover:bg-gray-100 rounded-full transition-colors"
-                        >
-                          <Settings className="h-4 w-4 text-gray-600" />
-                        </button>
+                        {(user?.role === "primary_admin" ||
+                          user?.role === "secondary_admin") && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              router.push(`/outlets/${outlet._id}/edit`);
+                            }}
+                            className="p-1.5 hover:bg-gray-100 rounded-full transition-colors"
+                          >
+                            <Settings className="h-4 w-4 text-gray-600" />
+                          </button>
+                        )}
                       </div>
 
                       {/* Address */}

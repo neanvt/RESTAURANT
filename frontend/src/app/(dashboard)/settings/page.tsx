@@ -40,6 +40,13 @@ export default function SettingsPage() {
       color: "bg-green-100 text-green-600",
     },
     {
+      icon: SettingsIcon,
+      label: "Menu Display Settings",
+      description: "Timing text and delivery info for printed menu",
+      path: "/settings/menu-display",
+      color: "bg-pink-100 text-pink-600",
+    },
+    {
       icon: Share2,
       label: "Social Media",
       description: "Connect your social media accounts",
