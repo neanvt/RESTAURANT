@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { Loader2, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -51,7 +51,7 @@ interface MenuPrintData {
   totalItems: number;
 }
 
-export default function PrintMenuPage() {
+function PrintMenuContent() {
   const searchParams = useSearchParams();
   const outletId = searchParams.get("outletId");
   const [loading, setLoading] = useState(true);
@@ -434,5 +434,22 @@ export default function PrintMenuPage() {
         }
       `}</style>
     </>
+  );
+}
+
+export default function PrintMenuPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <Loader2 className="h-12 w-12 animate-spin text-blue-600 mx-auto mb-4" />
+            <p className="text-gray-600">Loading menu...</p>
+          </div>
+        </div>
+      }
+    >
+      <PrintMenuContent />
+    </Suspense>
   );
 }
