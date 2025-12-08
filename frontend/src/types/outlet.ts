@@ -29,16 +29,31 @@ export interface OutletSettings {
   billPrinterEnabled: boolean;
 }
 
+export interface DeliveryConfig {
+  enabled: boolean;
+  minimumOrder: number;
+  deliveryCharge: number;
+  freeDeliveryAbove: number;
+}
+
+export interface MenuDisplaySettings {
+  timingText: string;
+  closedDay: string;
+}
+
 export interface Outlet {
   _id: string;
   ownerId: string;
   businessName: string;
+  name: string;
   logo?: string;
   address: Address;
   contact: Contact;
   gstDetails: GstDetails;
   upiDetails: UpiDetails;
   settings: OutletSettings;
+  deliveryConfig?: DeliveryConfig;
+  menuDisplaySettings?: MenuDisplaySettings;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
