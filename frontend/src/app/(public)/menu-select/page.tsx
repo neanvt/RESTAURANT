@@ -33,16 +33,21 @@ function MenuSelectContent() {
         : null;
 
     if (urlOutletId) {
+      console.log("Setting outlet ID from URL:", urlOutletId);
       setOutletId(urlOutletId);
       localStorage.setItem("publicOutletId", urlOutletId);
 
       // Clean URL - remove outlet ID from address bar for cleaner UX
       window.history.replaceState({}, "", "/menu-select");
     } else if (storedOutletId) {
+      console.log("Setting outlet ID from localStorage:", storedOutletId);
       setOutletId(storedOutletId);
     } else if (devOutletId) {
-      setOutletId(devOutletId);
       console.log("Using development outlet ID:", devOutletId);
+      setOutletId(devOutletId);
+    } else {
+      console.error("No outlet ID found in URL, localStorage, or dev mode");
+      toast.error("Please scan the QR code to access the menu");
     }
   }, [searchParams]);
 

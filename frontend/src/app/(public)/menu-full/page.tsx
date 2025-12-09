@@ -60,7 +60,12 @@ function MenuFullContent() {
       const storedOutletId = localStorage.getItem("publicOutletId");
       const outletId = urlOutletId || storedOutletId;
       
+      console.log("menu-full: URL outletId:", urlOutletId);
+      console.log("menu-full: Stored outletId:", storedOutletId);
+      console.log("menu-full: Using outletId:", outletId);
+      
       if (!outletId) {
+        console.error("menu-full: No outlet ID available");
         toast.error("Outlet not found. Please scan the QR code again.");
         router.push("/menu-select");
         return;
@@ -71,11 +76,14 @@ function MenuFullContent() {
         localStorage.setItem("publicOutletId", urlOutletId);
       }
       
+      console.log("menu-full: Fetching menu data for outlet:", outletId);
       const data = await reportsApi.getPublicMenuData(outletId);
+      console.log("menu-full: Menu data received:", data);
       setMenuData(data);
     } catch (error: any) {
-      console.error("Failed to fetch menu data:", error);
-      toast.error("Failed to load menu data");
+      console.error("menu-full: Failed to fetch menu data:", error);
+      console.error("menu-full: Error details:", error.response?.data || error.message);
+      toast.error(error.response?.data?.error?.message || "Unable to load menu. Please scan the QR code again.");
     } finally {
       setLoading(false);
     }
