@@ -26,12 +26,6 @@ function MenuSelectContent() {
     const urlOutletId = searchParams.get("outletId");
     const storedOutletId = localStorage.getItem("publicOutletId");
 
-    // Development mode: Use Swadika outlet ID as fallback for testing
-    const devOutletId =
-      process.env.NODE_ENV === "development"
-        ? "6911dfeda7eaf9ad178c1a03"
-        : null;
-
     if (urlOutletId) {
       console.log("Setting outlet ID from URL:", urlOutletId);
       setOutletId(urlOutletId);
@@ -42,12 +36,9 @@ function MenuSelectContent() {
     } else if (storedOutletId) {
       console.log("Setting outlet ID from localStorage:", storedOutletId);
       setOutletId(storedOutletId);
-    } else if (devOutletId) {
-      console.log("Using development outlet ID:", devOutletId);
-      setOutletId(devOutletId);
     } else {
-      console.error("No outlet ID found in URL, localStorage, or dev mode");
-      toast.error("Please scan the QR code to access the menu");
+      console.error("No outlet ID found. Please scan the QR code.");
+      // Don't set any outlet ID - user must scan QR code
     }
   }, [searchParams]);
 
