@@ -745,6 +745,7 @@ export const getMenuPrintData = async (
       success: true,
       data: {
         outlet: {
+          _id: outlet._id,
           name: outlet.businessName,
           logo: outlet.logo,
           address: {

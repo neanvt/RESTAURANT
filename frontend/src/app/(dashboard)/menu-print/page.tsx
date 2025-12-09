@@ -69,11 +69,17 @@ export default function MenuPrintPage() {
     try {
       setLoading(true);
       const data = await reportsApi.getMenuPrintData();
+      console.log("Menu data fetched:", data);
+      console.log("Outlet from data:", data?.outlet);
+      console.log("Current outlet from store:", currentOutlet);
       setMenuData(data);
       // Get outlet ID from the fetched data or from currentOutlet
       const id = data?.outlet?._id || currentOutlet?._id;
+      console.log("Setting outlet ID:", id);
       if (id) {
         setOutletId(id);
+      } else {
+        console.error("No outlet ID found in data or store!");
       }
     } catch (error: any) {
       console.error("Failed to fetch menu data:", error);
