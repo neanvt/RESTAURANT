@@ -153,7 +153,10 @@ function PrintMenuContent() {
           <span className="hidden md:inline">Copy URL</span>
           <span className="md:hidden">Copy</span>
         </Button>
-        <Button onClick={handlePrint} className="gap-2 shadow-lg text-xs md:text-sm">
+        <Button
+          onClick={handlePrint}
+          className="gap-2 shadow-lg text-xs md:text-sm"
+        >
           <Printer className="h-3 w-3 md:h-4 md:w-4" />
           <span className="hidden md:inline">Print</span>
         </Button>

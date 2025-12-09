@@ -33,11 +33,29 @@ app.use(
   })
 );
 
+// Handle preflight requests first
+app.options("*", (_req, res) => {
+  res.header("Access-Control-Allow-Origin", _req.headers.origin || "*");
+  res.header(
+    "Access-Control-Allow-Methods",
+    "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+  );
+  res.header(
+    "Access-Control-Allow-Headers",
+    "Content-Type, Authorization, X-Requested-With"
+  );
+  res.header("Access-Control-Allow-Credentials", "true");
+  res.header("Access-Control-Max-Age", "86400");
+  res.sendStatus(204);
+});
+
 // CORS configuration
 // Direct CORS configuration to fix immediate issues
 const allowedOrigins = [
   "https://restaurant-frontend-yvss.vercel.app",
   "https://restaurant-frontend-bice.vercel.app",
+  "https://swadika.foodstall.in",
+  "https://api.swadika.foodstall.in",
   "http://localhost:3000",
   "http://localhost:4200",
 ];

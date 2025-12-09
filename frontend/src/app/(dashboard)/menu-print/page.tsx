@@ -170,7 +170,10 @@ export default function MenuPrintPage() {
               <span className="hidden sm:inline">Export PDF</span>
               <span className="sm:hidden">PDF</span>
             </Button>
-            <Button onClick={handlePrint} className="gap-2 text-xs md:text-sm flex-1 md:flex-initial">
+            <Button
+              onClick={handlePrint}
+              className="gap-2 text-xs md:text-sm flex-1 md:flex-initial"
+            >
               <Printer className="h-3 w-3 md:h-4 md:w-4" />
               <span className="hidden sm:inline">Print Menu</span>
               <span className="sm:hidden">Print</span>
@@ -342,9 +345,7 @@ export default function MenuPrintPage() {
                 <div className="text-center md:text-right space-y-0.5 w-full md:w-auto md:flex-shrink-0 md:min-w-[130px] print:min-w-[110px]">
                   {menuData.outlet.deliveryConfig?.enabled !== false && (
                     <>
-                      <p className="font-bold text-gray-900">
-                        Home Delivery
-                      </p>
+                      <p className="font-bold text-gray-900">Home Delivery</p>
                       <p className="text-[10px] print:text-[9px] text-gray-700">
                         Min: ₹
                         {menuData.outlet.deliveryConfig?.minimumOrder || 300} (₹
