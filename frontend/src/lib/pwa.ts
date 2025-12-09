@@ -73,7 +73,7 @@ function handleOnline() {
 
   // Show notification
   if ("Notification" in window && Notification.permission === "granted") {
-    new Notification("Restaurant POS", {
+    new Notification("FoodStall POS", {
       body: "Back online! Syncing your data...",
       icon: "/icon-192.png",
       badge: "/icon-72.png",
@@ -89,7 +89,7 @@ function handleOffline() {
 
   // Show notification
   if ("Notification" in window && Notification.permission === "granted") {
-    new Notification("Restaurant POS", {
+    new Notification("FoodStall POS", {
       body: "You are offline. Your changes will sync when online.",
       icon: "/icon-192.png",
       badge: "/icon-72.png",

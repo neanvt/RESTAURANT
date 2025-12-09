@@ -173,10 +173,7 @@ function PrintMenuContent() {
                 <div className="mb-1">
                   <img
                     src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(
-                      `${
-                        process.env.NEXT_PUBLIC_APP_URL ||
-                        "http://localhost:3000"
-                      }/menu-select?outletId=${outletId}`
+                      `${typeof window !== 'undefined' ? window.location.origin : 'https://swadika.foodstall.in'}/menu-select?outletId=${outletId}`
                     )}`}
                     alt="Menu QR"
                     width={150}

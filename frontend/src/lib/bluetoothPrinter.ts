@@ -610,7 +610,7 @@ class BluetoothPrinterService {
     await this.printLine();
 
     await this.write(Commands.ALIGN_CENTER);
-    await this.write("Restaurant POS System");
+    await this.write("FoodStall POS System");
     await this.write(Commands.FEED_LINE);
     await this.write(
       new Date().toLocaleString("en-IN", {

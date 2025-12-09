@@ -3,9 +3,9 @@
  * Handles offline caching, background sync, and push notifications
  */
 
-const CACHE_NAME = "restaurant-pos-v1";
-const API_CACHE = "restaurant-pos-api-v1";
-const IMAGE_CACHE = "restaurant-pos-images-v1";
+const CACHE_NAME = "foodstall-pos-v1";
+const API_CACHE = "foodstall-pos-api-v1";
+const IMAGE_CACHE = "foodstall-pos-images-v1";
 
 // Assets to cache immediately on install
 const STATIC_ASSETS = [
@@ -208,7 +208,7 @@ self.addEventListener("push", (event) => {
   };
 
   event.waitUntil(
-    self.registration.showNotification(data.title || "Restaurant POS", options)
+    self.registration.showNotification(data.title || "FoodStall POS", options)
   );
 });
 

@@ -1,6 +1,6 @@
 {
-  "name": "Restaurant POS System",
-  "short_name": "Restaurant POS",
+  "name": "FoodStall POS System",
+  "short_name": "FoodStall POS",
   "description": "Complete restaurant management system with offline support, order management, inventory, and Bluetooth printing",
   "start_url": "/",
   "display": "standalone",
