@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { Loader2, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { reportsApi } from "@/lib/api/reports";
 import { toast } from "sonner";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 
 interface MenuItem {
@@ -42,25 +42,35 @@ interface MenuData {
   totalItems: number;
 }
 
-export default function MenuFullPage() {
+function MenuFullContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [loading, setLoading] = useState(true);
   const [menuData, setMenuData] = useState<MenuData | null>(null);
 
   useEffect(() => {
     fetchMenuData();
-  }, []);
+  }, [searchParams]);
 
   const fetchMenuData = async () => {
     try {
       setLoading(true);
-      // Get outletId from localStorage (set by menu-select page)
-      const outletId = localStorage.getItem("publicOutletId");
+      // Get outletId from URL params or localStorage
+      const urlOutletId = searchParams.get("outletId");
+      const storedOutletId = localStorage.getItem("publicOutletId");
+      const outletId = urlOutletId || storedOutletId;
+      
       if (!outletId) {
-        toast.error("Outlet not found");
-        router.push("/");
+        toast.error("Outlet not found. Please scan the QR code again.");
+        router.push("/menu-select");
         return;
       }
+      
+      // Store in localStorage for future use
+      if (urlOutletId) {
+        localStorage.setItem("publicOutletId", urlOutletId);
+      }
+      
       const data = await reportsApi.getPublicMenuData(outletId);
       setMenuData(data);
     } catch (error: any) {
@@ -216,5 +226,22 @@ export default function MenuFullPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function MenuFullPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center min-h-screen bg-gray-50">
+          <div className="text-center">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2 text-blue-500" />
+            <p className="text-gray-600">Loading full menu...</p>
+          </div>
+        </div>
+      }
+    >
+      <MenuFullContent />
+    </Suspense>
   );
 }

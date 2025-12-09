@@ -47,7 +47,11 @@ function MenuSelectContent() {
   }, [searchParams]);
 
   const handleMenuSelection = (menuType: "current" | "full") => {
-    router.push(`/menu-${menuType}`);
+    if (!outletId) {
+      toast.error("Unable to load menu. Please scan the QR code again.");
+      return;
+    }
+    router.push(`/menu-${menuType}?outletId=${outletId}`);
   };
 
   const handleSubmitFeedback = async (e: React.FormEvent) => {
