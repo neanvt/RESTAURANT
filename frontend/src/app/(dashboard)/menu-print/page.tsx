@@ -25,6 +25,7 @@ interface MenuCategory {
 
 interface MenuPrintData {
   outlet: {
+    _id?: string;
     name: string;
     logo?: string;
     address: {
@@ -58,6 +59,7 @@ export default function MenuPrintPage() {
   const { currentOutlet } = useOutletStore();
   const [loading, setLoading] = useState(true);
   const [menuData, setMenuData] = useState<MenuPrintData | null>(null);
+  const [outletId, setOutletId] = useState<string>("");
 
   useEffect(() => {
     fetchMenuData();
@@ -68,6 +70,11 @@ export default function MenuPrintPage() {
       setLoading(true);
       const data = await reportsApi.getMenuPrintData();
       setMenuData(data);
+      // Get outlet ID from the fetched data or from currentOutlet
+      const id = data?.outlet?._id || currentOutlet?._id;
+      if (id) {
+        setOutletId(id);
+      }
     } catch (error: any) {
       console.error("Failed to fetch menu data:", error);
       toast.error("Failed to load menu data");
@@ -83,14 +90,14 @@ export default function MenuPrintPage() {
   const handleViewPublicUrl = () => {
     const publicUrl = `${
       process.env.NEXT_PUBLIC_APP_URL || window.location.origin
-    }/print-menu?outletId=${currentOutlet?._id}`;
+    }/print-menu?outletId=${outletId || currentOutlet?._id}`;
     window.open(publicUrl, "_blank");
   };
 
   const handleCopyPublicUrl = () => {
     const publicUrl = `${
       process.env.NEXT_PUBLIC_APP_URL || window.location.origin
-    }/print-menu?outletId=${currentOutlet?._id}`;
+    }/print-menu?outletId=${outletId || currentOutlet?._id}`;
     navigator.clipboard.writeText(publicUrl);
     toast.success("Public URL copied to clipboard!");
   };
@@ -193,7 +200,7 @@ export default function MenuPrintPage() {
                 <div className="mb-1">
                   <img
                     src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(
-                      `${typeof window !== 'undefined' ? window.location.origin : 'https://swadika.foodstall.in'}/menu-select?outletId=${currentOutlet?._id || ""}`
+                      `${typeof window !== 'undefined' ? window.location.origin : 'https://swadika.foodstall.in'}/menu-select?outletId=${outletId || currentOutlet?._id || ""}`
                     )}`}
                     alt="Menu QR"
                     width={150}
