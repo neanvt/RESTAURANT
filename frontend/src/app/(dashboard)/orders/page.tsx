@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Plus,
   Clock,
@@ -35,6 +35,7 @@ import { getTodayLocal, getDaysAgoLocal } from "@/lib/date-utils";
 
 export default function OrdersPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const {
     orders,
     filters,
@@ -57,6 +58,29 @@ export default function OrdersPage() {
   useEffect(() => {
     fetchOrders();
   }, [fetchOrders]);
+
+  // Apply filters from query params (e.g. ?date=today)
+  useEffect(() => {
+    const dateParam = searchParams?.get("date");
+    const statusParam = searchParams?.get("status");
+
+    if (dateParam === "today") {
+      const today = getTodayLocal();
+      setDateRange({ startDate: today, endDate: today });
+      setFilters({ ...filters, startDate: today, endDate: today });
+    }
+
+    if (statusParam) {
+      setFilters({
+        ...filters,
+        status: statusParam === "all" ? undefined : statusParam,
+        startDate: dateRange.startDate || undefined,
+        endDate: dateRange.endDate || undefined,
+      });
+    }
+    // Intentionally depend on searchParams only to run when URL changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   const handleSearch = (value: string) => {
     setSearchQuery(value);

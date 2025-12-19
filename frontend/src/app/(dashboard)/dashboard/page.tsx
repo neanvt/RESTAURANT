@@ -253,7 +253,10 @@ export default function DashboardPage() {
                   {/* Today's Stats */}
                   <div className="grid grid-cols-2 gap-6 mb-4">
                     {/* Sales */}
-                    <div>
+                    <button
+                      onClick={() => router.push("/orders?date=today")}
+                      className="text-left hover:bg-white/50 p-2 rounded-lg transition-colors"
+                    >
                       <div className="text-sm text-gray-600 mb-1">
                         Today's sales
                       </div>
@@ -268,7 +271,7 @@ export default function DashboardPage() {
                           : formatCurrency(0)}{" "}
                         (Yesterday's)
                       </div>
-                    </div>
+                    </button>
 
                     {/* Orders */}
                     <button
