@@ -95,7 +95,7 @@ export default function InvoicePreview({
             {/* Invoice Info */}
             <div className="text-center mb-3">
               <div className="receipt-title font-medium text-gray-900">
-                Tax Invoice
+                Invoice
               </div>
             </div>
 

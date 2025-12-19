@@ -736,7 +736,7 @@ class BluetoothPrinterService {
     // Invoice type
     await this.write(Commands.ALIGN_CENTER);
     await this.write(Commands.BOLD_ON);
-    await this.write("TAX INVOICE\n");
+    await this.write("INVOICE\n");
     await this.write(Commands.BOLD_OFF);
     await this.write(Commands.ALIGN_LEFT);
     await this.write(Commands.HORIZONTAL_LINE + "\n");
@@ -791,21 +791,32 @@ class BluetoothPrinterService {
     await this.write(Commands.HORIZONTAL_LINE + "\n");
 
     // Items header - full width utilization (32 chars)
-    await this.write("Item              Qty  Price\n");
+    // Layout: Item(15) + ' ' + Qty(3) + ' ' + Price(5) + ' ' + Amount(6) = 32
+    const itemCol = "Item".padEnd(15);
+    const qtyCol = "Qty".padStart(3);
+    const priceCol = "Price".padStart(5);
+    const amountCol = "Amount".padStart(6);
+    await this.write(
+      itemCol + " " + qtyCol + " " + priceCol + " " + amountCol + "\n"
+    );
     await this.write(Commands.DOTTED_LINE + "\n");
 
-    // Items with full width spacing - 18+1+4+1+8 = 32 chars
+    // Items with full width spacing - 15+1+3+1+5+1+6 = 32 chars
     for (const item of invoice.items) {
-      // Wrap item names that are too long (18 chars max for item)
-      const itemLines = this.wrapText(item.name, 18);
-      const qty = ("x" + item.quantity).padStart(4);
-      const price = ("Rs" + item.price.toFixed(0)).padStart(8);
+      // Wrap item names that are too long (15 chars max for item)
+      const itemLines = this.wrapText(item.name, 15);
+      const qty = ("x" + item.quantity).toString().padStart(3);
+      const price = ("Rs" + Math.round(item.price).toString()).padStart(5);
+      const itemAmount = Math.round(item.price * (Number(item.quantity) || 0));
+      const amount = ("Rs" + itemAmount.toString()).padStart(6);
 
-      // Print first line with qty and price - total = 18+1+4+1+8 = 32 chars
+      // Print first line with qty, price and amount - total = 15+1+3+1+5+1+6 = 32 chars
       const firstLine = itemLines[0] || "";
-      await this.write(firstLine.padEnd(18) + " " + qty + " " + price + "\n");
+      await this.write(
+        firstLine.padEnd(15) + " " + qty + " " + price + " " + amount + "\n"
+      );
 
-      // Print additional lines for wrapped item names (no qty/price)
+      // Print additional lines for wrapped item names (no qty/price/amount)
       for (let i = 1; i < itemLines.length; i++) {
         await this.write(itemLines[i] + "\n");
       }

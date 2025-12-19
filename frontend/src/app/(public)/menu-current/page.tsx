@@ -58,31 +58,37 @@ function MenuCurrentContent() {
       const urlOutletId = searchParams.get("outletId");
       const storedOutletId = localStorage.getItem("publicOutletId");
       const outletId = urlOutletId || storedOutletId;
-      
+
       console.log("menu-current: URL outletId:", urlOutletId);
       console.log("menu-current: Stored outletId:", storedOutletId);
       console.log("menu-current: Using outletId:", outletId);
-      
+
       if (!outletId) {
         console.error("menu-current: No outlet ID available");
         toast.error("Outlet not found. Please scan the QR code again.");
         router.push("/menu-select");
         return;
       }
-      
+
       // Store in localStorage for future use
       if (urlOutletId) {
         localStorage.setItem("publicOutletId", urlOutletId);
       }
-      
+
       console.log("menu-current: Fetching menu data for outlet:", outletId);
       const data = await reportsApi.getCurrentMenuData(outletId);
       console.log("menu-current: Menu data received:", data);
       setMenuData(data);
     } catch (error: any) {
       console.error("menu-current: Failed to fetch menu data:", error);
-      console.error("menu-current: Error details:", error.response?.data || error.message);
-      toast.error(error.response?.data?.error?.message || "Unable to load menu. Please scan the QR code again.");
+      console.error(
+        "menu-current: Error details:",
+        error.response?.data || error.message
+      );
+      toast.error(
+        error.response?.data?.error?.message ||
+          "Unable to load menu. Please scan the QR code again."
+      );
     } finally {
       setLoading(false);
     }

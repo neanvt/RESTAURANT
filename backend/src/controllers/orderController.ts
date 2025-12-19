@@ -1054,6 +1054,23 @@ export const completeOrder = async (
   try {
     const { id } = req.params;
     const { paymentMethod = "cash" } = req.body;
+    // Validate order id to avoid Mongoose CastErrors
+    if (!Types.ObjectId.isValid(id)) {
+      res.status(400).json({
+        success: false,
+        error: { message: "Invalid order id" },
+      });
+      return;
+    }
+
+    // Ensure authenticated user is present
+    if (!req.user || !req.user.userId) {
+      res.status(401).json({
+        success: false,
+        error: { message: "Unauthenticated request" },
+      });
+      return;
+    }
     const outletId = req.outletId;
 
     if (!outletId) {
@@ -1091,7 +1108,16 @@ export const completeOrder = async (
     order.paymentStatus = "paid";
     order.paymentMethod = paymentMethod;
     order.completedAt = new Date();
-    await order.save();
+    try {
+      await order.save();
+    } catch (saveErr: any) {
+      console.error("Failed to save order on complete:", {
+        orderId: order._id?.toString(),
+        orderSnapshot: JSON.parse(JSON.stringify(order)),
+        error: saveErr,
+      });
+      throw saveErr;
+    }
 
     // Create invoice if it doesn't exist
     try {
@@ -1163,21 +1189,31 @@ export const completeOrder = async (
     }
 
     // Log activity
-    await staffService.logActivity({
-      userId: req.user!.userId,
-      outletId: outletId.toString(),
-      action: `Completed order #${order.orderNumber}`,
-      actionType: "order_completed",
-      metadata: { orderId: order._id, status: "completed" },
-      ipAddress: req.ip || "unknown",
-      userAgent: req.get("user-agent"),
-    });
+    try {
+      await staffService.logActivity({
+        userId: req.user!.userId,
+        outletId: outletId.toString(),
+        action: `Completed order #${order.orderNumber}`,
+        actionType: "order_completed",
+        metadata: { orderId: order._id, status: "completed" },
+        ipAddress: req.ip || "unknown",
+        userAgent: req.get("user-agent"),
+      });
+    } catch (logErr: any) {
+      console.error("Failed to log staff activity for completed order:", {
+        orderId: order._id?.toString(),
+        userId: req.user!.userId,
+        error: logErr,
+      });
+      // do not fail the main operation for logging errors
+    }
 
     res.json({
       success: true,
       data: order,
     });
   } catch (error: any) {
+    console.error("Complete order error:", error);
     res.status(500).json({
       success: false,
       error: { message: error.message || "Failed to complete order" },
