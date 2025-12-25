@@ -206,15 +206,28 @@ export class OutletService {
    */
   async selectOutlet(outletId: string, userId: string): Promise<IOutlet> {
     try {
-      // Verify outlet exists and belongs to user
+      // Verify outlet exists and is active
       const outlet = await Outlet.findOne({
         _id: outletId,
-        ownerId: userId,
         isActive: true,
       });
 
       if (!outlet) {
-        throw new Error("Outlet not found or unauthorized");
+        throw new Error("Outlet not found");
+      }
+
+      // Verify user has access to this outlet
+      const user = await User.findById(userId);
+      if (!user) {
+        throw new Error("User not found");
+      }
+
+      const hasAccess = user.outlets.some(
+        (outletIdInArray) => outletIdInArray.toString() === outletId
+      );
+
+      if (!hasAccess) {
+        throw new Error("User does not have access to this outlet");
       }
 
       // Update user's current outlet
