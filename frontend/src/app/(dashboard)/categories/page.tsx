@@ -34,7 +34,11 @@ export default function AddCategoryPage() {
       toast.success("Category created successfully!");
       setCategoryName(""); // Clear for new entry
     } catch (error: any) {
-      toast.error(error.message || "Failed to create category");
+      const errorMessage =
+        error.response?.data?.error?.message ||
+        error.message ||
+        "Failed to create category";
+      toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -53,7 +57,11 @@ export default function AddCategoryPage() {
       toast.success("Category created successfully!");
       router.back();
     } catch (error: any) {
-      toast.error(error.message || "Failed to create category");
+      const errorMessage =
+        error.response?.data?.error?.message ||
+        error.message ||
+        "Failed to create category";
+      toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
     }

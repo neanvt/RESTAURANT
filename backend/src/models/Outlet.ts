@@ -58,6 +58,10 @@ export interface IOutlet extends Document {
     timingText?: string;
     closedDay?: string;
   };
+  onlinePresence?: {
+    name: string;
+    logo: string;
+  }[];
   settings: {
     currency: string;
     language: string;
@@ -275,6 +279,28 @@ const OutletSchema: Schema = new Schema(
         type: String,
         default: "Monday",
         trim: true,
+      },
+    },
+    onlinePresence: {
+      type: [
+        {
+          name: {
+            type: String,
+            required: true,
+            trim: true,
+          },
+          logo: {
+            type: String,
+            required: true,
+          },
+        },
+      ],
+      default: [],
+      validate: {
+        validator: function (v: any[]) {
+          return v.length <= 4;
+        },
+        message: "Maximum 4 online presence platforms allowed",
       },
     },
     settings: {

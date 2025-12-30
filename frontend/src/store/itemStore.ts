@@ -26,6 +26,7 @@ interface ItemState {
   ) => Promise<Item>;
   toggleFavourite: (id: string) => Promise<Item>;
   toggleAvailability: (id: string) => Promise<Item>;
+  toggleTodaysSpecial: (id: string) => Promise<Item>;
   updateStock: (id: string, quantity: number) => Promise<Item>;
   setFilters: (filters: ItemFilters) => void;
   setSelectedItem: (item: Item | null) => void;
@@ -300,6 +301,25 @@ export const useItemStore = create<ItemState>((set, get) => ({
         error:
           error.response?.data?.error?.message ||
           "Failed to toggle availability",
+      });
+      throw error;
+    }
+  },
+
+  toggleTodaysSpecial: async (id) => {
+    try {
+      const updatedItem = await itemsApi.toggleTodaysSpecial(id);
+      set((state) => ({
+        items: state.items.map((item) => (item.id === id ? updatedItem : item)),
+        selectedItem:
+          state.selectedItem?.id === id ? updatedItem : state.selectedItem,
+      }));
+      return updatedItem;
+    } catch (error: any) {
+      set({
+        error:
+          error.response?.data?.error?.message ||
+          "Failed to toggle today's special",
       });
       throw error;
     }

@@ -109,6 +109,12 @@ export const itemsApi = {
     return response.data.data;
   },
 
+  // Toggle today's special status
+  toggleTodaysSpecial: async (id: string): Promise<Item> => {
+    const response = await api.put(`/items/${id}/toggle-todays-special`);
+    return response.data.data;
+  },
+
   // Update stock
   updateStock: async (id: string, quantity: number): Promise<Item> => {
     const response = await api.put(`/items/${id}/stock`, { quantity });

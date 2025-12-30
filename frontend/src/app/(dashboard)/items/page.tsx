@@ -2,7 +2,16 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Search, Edit, Trash2, Star, Eye, EyeOff } from "lucide-react";
+import {
+  Plus,
+  Search,
+  Edit,
+  Trash2,
+  Star,
+  Eye,
+  EyeOff,
+  Sparkles,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { CategoryFilter } from "@/components/items/CategoryFilter";
@@ -25,6 +34,7 @@ export default function ItemsPage() {
     deleteItem,
     toggleFavourite,
     toggleAvailability,
+    toggleTodaysSpecial,
     setFilters,
   } = useItemStore();
   const [searchQuery, setSearchQuery] = useState("");
@@ -100,6 +110,15 @@ export default function ItemsPage() {
       await toggleAvailability(id);
     } catch (error: any) {
       toast.error(error.message || "Failed to update item");
+    }
+  };
+
+  const handleToggleTodaysSpecial = async (id: string) => {
+    try {
+      await toggleTodaysSpecial(id);
+      toast.success("Today's special status updated");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to update today's special");
     }
   };
 
@@ -196,6 +215,12 @@ export default function ItemsPage() {
                           <Star className="h-3 w-3 text-white fill-current" />
                         </div>
                       )}
+                      {/* Today's Special Badge */}
+                      {item.todaysSpecial && (
+                        <div className="absolute top-1 left-1 bg-orange-500 rounded-full p-1">
+                          <Sparkles className="h-3 w-3 text-white fill-current" />
+                        </div>
+                      )}
                     </div>
 
                     {/* Content */}
@@ -237,6 +262,11 @@ export default function ItemsPage() {
                         "flex-1",
                         item.isFavourite && "text-yellow-600 border-yellow-600"
                       )}
+                      title={
+                        item.isFavourite
+                          ? "Remove from favourites"
+                          : "Add to favourites"
+                      }
                     >
                       <Star
                         className={cn(
@@ -248,11 +278,38 @@ export default function ItemsPage() {
                     <Button
                       variant="outline"
                       size="sm"
+                      onClick={() => handleToggleTodaysSpecial(item.id)}
+                      className={cn(
+                        "flex-1",
+                        item.todaysSpecial &&
+                          "text-orange-600 border-orange-600 bg-orange-50"
+                      )}
+                      title={
+                        item.todaysSpecial
+                          ? "Remove from today's special"
+                          : "Mark as today's special"
+                      }
+                    >
+                      <Sparkles
+                        className={cn(
+                          "h-4 w-4",
+                          item.todaysSpecial && "fill-current"
+                        )}
+                      />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
                       onClick={() => handleToggleAvailability(item.id)}
                       className={cn(
                         "flex-1",
                         !item.isAvailable && "text-red-600 border-red-600"
                       )}
+                      title={
+                        item.isAvailable
+                          ? "Mark as unavailable"
+                          : "Mark as available"
+                      }
                     >
                       {item.isAvailable ? (
                         <Eye className="h-4 w-4" />
@@ -265,6 +322,7 @@ export default function ItemsPage() {
                       size="sm"
                       onClick={() => handleDelete(item.id)}
                       className="flex-1 text-red-600 border-red-600 hover:bg-red-50"
+                      title="Delete item"
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>

@@ -19,6 +19,7 @@ export interface IItem extends Document {
   isFavourite: boolean;
   isAvailable: boolean;
   isActive: boolean;
+  todaysSpecial: boolean;
   inventory: {
     trackInventory: boolean;
     currentStock: number;
@@ -100,6 +101,11 @@ const itemSchema = new Schema<IItem>(
     isActive: {
       type: Boolean,
       default: true,
+    },
+    todaysSpecial: {
+      type: Boolean,
+      default: false,
+      index: true,
     },
     inventory: {
       trackInventory: {

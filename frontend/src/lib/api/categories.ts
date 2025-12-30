@@ -16,17 +16,8 @@ const api = axios.create({
 // Add auth token to requests
 api.interceptors.request.use((config) => {
   const token = getAccessToken();
-  console.log("[Categories API] Token check:", {
-    hasToken: !!token,
-    tokenLength: token?.length,
-    tokenPreview: token ? `${token.substring(0, 20)}...` : "NONE",
-  });
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
-  } else {
-    console.error(
-      "[Categories API] No token found! Check auth-storage in localStorage"
-    );
   }
   return config;
 });

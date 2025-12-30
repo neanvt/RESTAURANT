@@ -41,6 +41,11 @@ export interface MenuDisplaySettings {
   closedDay: string;
 }
 
+export interface OnlinePresence {
+  name: string;
+  logo: string;
+}
+
 export interface Outlet {
   _id: string;
   ownerId: string;
@@ -54,6 +59,7 @@ export interface Outlet {
   settings: OutletSettings;
   deliveryConfig?: DeliveryConfig;
   menuDisplaySettings?: MenuDisplaySettings;
+  onlinePresence?: OnlinePresence[];
   isActive: boolean;
   createdAt: string;
   updatedAt: string;

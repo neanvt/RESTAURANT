@@ -9,6 +9,7 @@ import {
   uploadItemImage,
   toggleFavourite,
   toggleAvailability,
+  toggleTodaysSpecial,
   updateStock,
   getLowStockItems,
 } from "../controllers/itemController";
@@ -94,6 +95,13 @@ router.put("/:id/toggle-favourite", toggleFavourite);
  * @access  Private
  */
 router.put("/:id/toggle-availability", toggleAvailability);
+
+/**
+ * @route   PUT /api/items/:id/toggle-todays-special
+ * @desc    Toggle item today's special status
+ * @access  Private
+ */
+router.put("/:id/toggle-todays-special", toggleTodaysSpecial);
 
 /**
  * @route   PUT /api/items/:id/stock

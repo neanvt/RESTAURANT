@@ -52,6 +52,10 @@ export default function EditOutletPage() {
     upiId: "",
   });
 
+  const [onlinePresence, setOnlinePresence] = useState<
+    { name: string; logo: string }[]
+  >([]);
+
   useEffect(() => {
     const loadOutlet = async () => {
       try {
@@ -72,6 +76,9 @@ export default function EditOutletPage() {
         });
         if (outlet.logo) {
           setCurrentLogo(outlet.logo);
+        }
+        if (outlet.onlinePresence) {
+          setOnlinePresence(outlet.onlinePresence);
         }
       } catch (error: any) {
         toast.error("Failed to load outlet details");
@@ -153,6 +160,9 @@ export default function EditOutletPage() {
         upiDetails: {
           upiId: formData.upiId || undefined,
         },
+        onlinePresence: onlinePresence.filter(
+          (p) => p.name.trim() && p.logo.trim()
+        ),
       };
 
       await updateOutlet(outletId, outletData);
@@ -482,6 +492,99 @@ export default function EditOutletPage() {
                   className="uppercase"
                 />
               </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Online Presence */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Building2 className="h-5 w-5 text-blue-600" />
+              Online Presence (Max 4)
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-gray-600">
+              Add platforms where your business is available online (Swiggy,
+              Zomato, etc.)
+            </p>
+            {onlinePresence.map((platform, index) => (
+              <div
+                key={index}
+                className="p-3 border rounded-lg space-y-3 relative"
+              >
+                <button
+                  type="button"
+                  onClick={() => {
+                    const updated = onlinePresence.filter(
+                      (_, i) => i !== index
+                    );
+                    setOnlinePresence(updated);
+                  }}
+                  className="absolute top-2 right-2 p-1 text-red-500 hover:bg-red-50 rounded"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+                <div>
+                  <Label htmlFor={`platform-name-${index}`}>
+                    Platform Name
+                  </Label>
+                  <Input
+                    id={`platform-name-${index}`}
+                    value={platform.name}
+                    onChange={(e) => {
+                      const updated = [...onlinePresence];
+                      updated[index].name = e.target.value;
+                      setOnlinePresence(updated);
+                    }}
+                    placeholder="e.g., Swiggy, Zomato"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor={`platform-logo-${index}`}>Logo URL</Label>
+                  <Input
+                    id={`platform-logo-${index}`}
+                    value={platform.logo}
+                    onChange={(e) => {
+                      const updated = [...onlinePresence];
+                      updated[index].logo = e.target.value;
+                      setOnlinePresence(updated);
+                    }}
+                    placeholder="https://example.com/logo.png"
+                  />
+                  {platform.logo && (
+                    <div className="mt-2">
+                      <img
+                        src={platform.logo}
+                        alt={platform.name}
+                        className="h-8 w-8 object-contain"
+                        onError={(e) => {
+                          e.currentTarget.style.display = "none";
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+            {onlinePresence.length < 4 && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  if (onlinePresence.length < 4) {
+                    setOnlinePresence([
+                      ...onlinePresence,
+                      { name: "", logo: "" },
+                    ]);
+                  }
+                }}
+                className="w-full"
+              >
+                <Building2 className="h-4 w-4 mr-2" />
+                Add Platform
+              </Button>
             )}
           </CardContent>
         </Card>

@@ -717,6 +717,9 @@ export const getMenuPrintData = async (
       .sort({ name: 1 })
       .lean();
 
+    // Get today's special items (max 2)
+    const todaysSpecialItems = items.filter((item: any) => item.todaysSpecial);
+
     // Group items by category
     const itemsByCategory = categories
       .map((category: any) => {
@@ -736,6 +739,7 @@ export const getMenuPrintData = async (
             description: item.description,
             price: item.price,
             image: item.image?.url,
+            todaysSpecial: item.todaysSpecial || false,
           })),
         };
       })
@@ -769,8 +773,18 @@ export const getMenuPrintData = async (
             timingText: "4:00PM to 8:30PM",
             closedDay: "Monday",
           },
+          onlinePresence: outlet.onlinePresence || [],
         },
         categories: itemsByCategory,
+        todaysSpecial: todaysSpecialItems.map((item: any) => ({
+          id: item._id,
+          name: item.name,
+          description: item.description,
+          price: item.price,
+          image: item.image?.url,
+          categoryName:
+            typeof item.category === "object" ? item.category.name : undefined,
+        })),
         totalItems: items.length,
       },
     });

@@ -30,6 +30,7 @@ export interface Item {
   isFavourite: boolean;
   isAvailable: boolean;
   isActive: boolean;
+  todaysSpecial: boolean;
   inventory: ItemInventory;
   createdAt: string;
   updatedAt: string;

@@ -23,6 +23,7 @@ export interface CreateItemDTO {
   };
   isFavourite?: boolean;
   isAvailable?: boolean;
+  todaysSpecial?: boolean;
   inventory?: {
     trackInventory: boolean;
     currentStock: number;
@@ -180,6 +181,21 @@ class ItemService {
         }
       }
 
+      // If todaysSpecial is being set to true, check the limit
+      if (data.todaysSpecial === true && !item.todaysSpecial) {
+        const todaysSpecialCount = await Item.countDocuments({
+          outletId,
+          isActive: true,
+          todaysSpecial: true,
+        });
+
+        if (todaysSpecialCount >= 2) {
+          throw new Error(
+            "Maximum 2 items can be marked as today's special. Please unmark another item first."
+          );
+        }
+      }
+
       // Update item fields
       Object.assign(item, data);
 
@@ -284,6 +300,54 @@ class ItemService {
     } catch (error: any) {
       logger.error("Error toggling availability:", error);
       throw new Error("Failed to toggle availability");
+    }
+  }
+
+  /**
+   * Toggle today's special status
+   * Maximum 2 items can be marked as today's special per outlet
+   */
+  async toggleTodaysSpecial(
+    itemId: string,
+    outletId: string
+  ): Promise<IItem | null> {
+    try {
+      const item = await Item.findOne({
+        _id: itemId,
+        outletId,
+        isActive: true,
+      });
+
+      if (!item) {
+        throw new Error("Item not found");
+      }
+
+      // If trying to set as today's special, check the limit
+      if (!item.todaysSpecial) {
+        const todaysSpecialCount = await Item.countDocuments({
+          outletId,
+          isActive: true,
+          todaysSpecial: true,
+        });
+
+        if (todaysSpecialCount >= 2) {
+          throw new Error(
+            "Maximum 2 items can be marked as today's special. Please unmark another item first."
+          );
+        }
+      }
+
+      item.todaysSpecial = !item.todaysSpecial;
+      await item.save();
+
+      logger.info(
+        `Item today's special toggled: ${itemId} -> ${item.todaysSpecial}`
+      );
+
+      return item;
+    } catch (error: any) {
+      logger.error("Error toggling today's special:", error);
+      throw new Error(error.message || "Failed to toggle today's special");
     }
   }
 

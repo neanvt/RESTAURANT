@@ -534,6 +534,60 @@ export const toggleAvailability = async (
 };
 
 /**
+ * Toggle today's special status
+ */
+export const toggleTodaysSpecial = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const outletId = req.outletId;
+    const { id } = req.params;
+
+    if (!outletId) {
+      res.status(400).json({
+        success: false,
+        error: {
+          code: "NO_OUTLET",
+          message: "No outlet selected",
+        },
+      });
+      return;
+    }
+
+    const item = await itemService.toggleTodaysSpecial(id, outletId);
+
+    if (!item) {
+      res.status(404).json({
+        success: false,
+        error: {
+          code: "NOT_FOUND",
+          message: "Item not found",
+        },
+      });
+      return;
+    }
+
+    res.json({
+      success: true,
+      data: item,
+      message: `Item ${
+        item.todaysSpecial ? "marked as" : "removed from"
+      } today's special`,
+    });
+  } catch (error: any) {
+    logger.error("Toggle today's special error:", error);
+    res.status(400).json({
+      success: false,
+      error: {
+        code: "TOGGLE_ERROR",
+        message: error.message || "Failed to toggle today's special",
+      },
+    });
+  }
+};
+
+/**
  * Update stock
  */
 export const updateStock = async (

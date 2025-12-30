@@ -21,21 +21,26 @@ class CategoryService {
    */
   async createCategory(data: CreateCategoryDTO): Promise<ICategory> {
     try {
-      // Check if category with same name exists for this outlet
+      // Check if category with same name exists for this outlet (case-insensitive)
       const existingCategory = await Category.findOne({
         outletId: data.outletId,
-        name: data.name,
+        name: { $regex: new RegExp(`^${data.name}$`, "i") },
         isActive: true,
       });
 
       if (existingCategory) {
-        throw new Error("Category with this name already exists");
+        logger.warn(
+          `Category creation blocked - duplicate name: "${data.name}" (existing: "${existingCategory.name}", id: ${existingCategory._id})`
+        );
+        throw new Error(
+          `Category "${existingCategory.name}" already exists for this outlet`
+        );
       }
 
       const category = new Category(data);
       await category.save();
 
-      logger.info(`Category created: ${category._id}`);
+      logger.info(`Category created: ${category._id} - ${category.name}`);
 
       return category;
     } catch (error: any) {
